@@ -5,7 +5,14 @@ const path = require('path');
 const app = express();
 const homeRoutes = require('./routes/home');
 
-// Setup Handlebars as view engine
+
+
+//All the Routers of Our Application
+
+const homeRouter = require("./src/api/home.routes");
+const chatRoutes = require("./src/api/chat.routes")
+
+app.set('views', __dirname + '/templates');
 app.engine('handlebars', exphbs.engine({ defaultLayout: 'main', layoutsDir: 'templates/layouts' }));
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'templates'));

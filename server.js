@@ -11,7 +11,7 @@ require('dotenv').config();
 //All the Routers of Our Application
 
 const homeRouter = require("./routes/home");
-
+const chatRoutes = require("./src/api/chat.routes")
 
 app.set('views', __dirname + '/templates');
 app.set('view engine', 'handlebars');
@@ -23,9 +23,7 @@ app.use(express.json()); // Allows parsing of JSON
 
 app.use("/", homeRouter);
 
-app.use("/api/chat", (req,res) => {
-    res.send("Hello Hello")
-})
+app.use("/api", chatRoutes)
 
 
 app.listen(8000, () => {

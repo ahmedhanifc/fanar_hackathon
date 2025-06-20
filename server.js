@@ -4,13 +4,12 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const homeRoutes = require('./src/api/home.routes');
 
 
 
 //All the Routers of Our Application
 
-const homeRouter = require("./src/api/home.routes");
+const homeRoutes = require('./src/api/home.routes');
 const chatRoutes = require("./src/api/chat.routes")
 
 app.set('views', __dirname + '/templates');
@@ -20,9 +19,13 @@ app.set('views', path.join(__dirname, 'templates'));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
 // Use your routes
 app.use('/', homeRoutes);
+app.use("/api", chatRoutes)
+
+
 
 // Start server
 const PORT = process.env.PORT || 3000;

@@ -5,15 +5,12 @@ const client = new OpenAI({
     apiKey: process.env.FANAR_API_KEY, // The library knows to create the 'Authorization' header
 });
 
-async function getFanarChatCompletion(userMessage, systemPrompt) {
+async function getFanarChatCompletion(messagesArray) {
     console.log('Sending request to Fanar API...');
     try {
         const response = await client.chat.completions.create({
             model: "Fanar-S-1-7B",
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userMessage }
-            ],
+            messages: messagesArray
         });
 
         console.log('Received response from Fanar API.');

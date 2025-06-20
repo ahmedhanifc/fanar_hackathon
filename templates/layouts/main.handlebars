@@ -1,90 +1,12 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{title}}</title>
-  <link rel="stylesheet" href="/css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fanar Legal Assistant</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <header>
-    <nav>
-      <a href="/chat">Chat</a>
-      <a href="/history">History</a>
-      <a href="/lawyer-dashboard">Lawyer Dashboard</a>
-    </nav>
-  </header>
-  <main>
     {{{body}}}
-  </main>
-  <footer>
-    <p>&copy; 2025 Fanar Legal Assist</p>
-  </footer>
 </body>
 </html>
-
---- home.hbs ---
-{{! Login Page }}
-<h2>Welcome to Fanar Legal Assistant</h2>
-<form action="/login" method="POST">
-  <label for="username">Username</label>
-  <input type="text" name="username" required>
-
-  <label for="password">Password</label>
-  <input type="password" name="password" required>
-
-  <button type="submit">Login</button>
-</form>
-
---- chat.hbs ---
-<h2>Chat with Fanar Legal Bot</h2>
-<div id="chat-box">
-  {{!-- Conversation History Here --}}
-</div>
-<form id="chat-form">
-  <input type="text" name="userInput" placeholder="Type your message...">
-  <button type="submit">Send</button>
-  <button type="button" id="voice-btn">🎙</button>
-  <input type="file" accept="image/*" id="image-input">
-</form>
-<a href="/history">View Case History</a>
-
---- history.hbs ---
-<h2>Your Case History</h2>
-<ul>
-  {{#each cases}}
-    <li>
-      <h3>{{this.title}}</h3>
-      <p>Status: {{this.status}}</p>
-      <p>Submitted on: {{this.date}}</p>
-    </li>
-  {{/each}}
-</ul>
-
---- submitted.hbs ---
-<h2>Case Submitted</h2>
-<p>Your case has been submitted successfully.</p>
-<a href="/cancel-case">Click here to cancel</a>
-<a href="/chat">Back to Chat</a>
-
---- lawyer-dashboard.hbs ---
-<h2>Lawyer Dashboard</h2>
-<table>
-  <thead>
-    <tr>
-      <th>Client</th>
-      <th>Summary</th>
-      <th>Status</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    {{#each cases}}
-    <tr>
-      <td>{{this.clientName}}</td>
-      <td>{{this.summary}}</td>
-      <td>{{this.status}}</td>
-      <td><a href="/case/{{this.id}}">Review</a></td>
-    </tr>
-    {{/each}}
-  </tbody>
-</table>

@@ -1,0 +1,14 @@
+<div class="container">
+    <h2>Your Case History</h2>
+    <ul class="case-list">
+        
+        {{#each cases}}
+        <li>
+            <strong>{{this.title}}</strong> – <span class="status">{{this.status}}</span>
+        </li>
+        {{/each}}
+    </ul>
+
+    <a href="/chat" class="btn-secondary">Back to Chat</a>
+</div>
+

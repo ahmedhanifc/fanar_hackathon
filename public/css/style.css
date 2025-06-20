@@ -1,114 +1,141 @@
-/* Reset and base styles */
-* {
-    box-sizing: border-box;
+/* Base styling */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f6f8fb;
+    color: #333;
     margin: 0;
     padding: 0;
-}
-
-body {
-    font-family: 'Segoe UI', sans-serif;
-    background-color: #f9f9f9;
-    color: #333;
-    line-height: 1.5;
-}
-
-/* Container layout */
-.container {
+  }
+  
+  .container {
     max-width: 480px;
-    margin: 0 auto;
-    padding: 20px 15px;
-}
-
-/* Chat box */
-.chat-box {
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    height: 350px;
-    overflow-y: auto;
-    padding: 15px;
-    background: #ffffff;
-    margin-bottom: 15px;
-}
-
-/* Input + buttons */
-input[type="text"],
-textarea {
-    width: 100%;
-    padding: 12px 14px;
-    margin-bottom: 10px;
+    margin: auto;
+    padding: 20px;
+    background-color: #fff;
+    min-height: 100vh;
+  }
+  
+  /* Typography */
+  h1, h2 {
+    text-align: center;
+    color: #00457C;
+  }
+  
+  p {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  
+  /* Forms */
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  
+  input[type="text"],
+  input[type="file"],
+  button {
+    padding: 12px;
+    font-size: 1rem;
     border: 1px solid #ccc;
     border-radius: 8px;
-    font-size: 16px;
-}
-
-/* Button style */
-button {
     width: 100%;
-    padding: 12px;
-    background-color: #0072c6;
+  }
+  
+  button {
+    background-color: #00457C;
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 16px;
     cursor: pointer;
-    transition: background 0.3s;
-}
-
-button:hover {
-    background-color: #005fa3;
-}
-
-/* Voice input icon/button */
-.voice-input {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 10px 0;
-}
-
-.voice-input button {
-    width: auto;
-    padding: 10px 16px;
-    font-size: 15px;
-}
-
-/* Status tags or case list items */
-.status-tag {
-    display: inline-block;
-    padding: 6px 12px;
-    margin-top: 5px;
-    background: #eee;
-    border-radius: 12px;
-    font-size: 14px;
-}
-
-/* Responsive text and spacing */
-h1,
-h2,
-h3 {
-    font-size: 22px;
-    margin-bottom: 15px;
-}
-
-p {
-    margin-bottom: 10px;
-    font-size: 16px;
-}
-
-/* Responsive images */
-img {
-    max-width: 100%;
-    height: auto;
+  }
+  
+  button:hover {
+    background-color: #00365F;
+  }
+  
+  #voice-btn {
+    background-color: #f5a623;
+    color: white;
+    margin-top: 10px;
+  }
+  
+  /* Chat styling */
+  .chat-box {
+    background-color: #eef3f8;
+    border-radius: 10px;
+    padding: 15px;
+    min-height: 150px;
+    margin-bottom: 20px;
+    overflow-y: auto;
+  }
+  
+  .ai-message {
+    background-color: #d6e9ff;
+    padding: 10px;
     border-radius: 8px;
-}
-
-/* Navigation / link styling */
-a {
-    color: #0072c6;
+    margin-bottom: 10px;
+  }
+  
+  /* Links and Buttons */
+  .link {
+    display: block;
+    text-align: center;
+    margin-top: 15px;
+    color: #00457C;
     text-decoration: none;
-    font-weight: 500;
-}
-
-a:hover {
+    font-weight: bold;
+  }
+  
+  .link:hover {
     text-decoration: underline;
-}
+  }
+  
+  .button.danger {
+    background-color: #e74c3c;
+    color: white;
+    padding: 12px;
+    text-align: center;
+    border-radius: 8px;
+    display: block;
+    margin-top: 10px;
+  }
+  
+  /* Case List */
+  .case-list {
+    list-style: none;
+    padding-left: 0;
+  }
+  
+  .case-list li {
+    background-color: #f1f1f1;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+  }
+  
+  .status-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    background-color: #ccc;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-top: 5px;
+  }
+  
+  /* Responsive tweaks */
+  @media (max-width: 480px) {
+    h1, h2 {
+      font-size: 1.4rem;
+    }
+  
+    input, button {
+      font-size: 1rem;
+    }
+  
+    .container {
+      padding: 15px;
+    }
+  }
+  

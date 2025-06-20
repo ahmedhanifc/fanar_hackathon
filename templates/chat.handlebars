@@ -1,0 +1,21 @@
+<div class="container">
+    <h2>Chat with Legal Assistant</h2>
+    <div class="chat-box">
+        {{#each messages}}
+        <div class="message user">{{this.user}}</div>
+        <div class="message bot">{{this.bot}}</div>
+        {{/each}}
+    </div>
+
+    <form action="/send" method="POST" class="chat-form">
+        <input type="text" name="message" placeholder="Type your message">
+        <button type="submit">Send</button>
+    </form>
+
+    <div class="input-actions">
+        <button class="mic-btn">🎤 Voice Input</button>
+        <input type="file" accept="image/*" class="image-upload">
+    </div>
+    <a href="/history" class="btn-secondary">View Chat History</a>
+
+</div>

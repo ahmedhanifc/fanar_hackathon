@@ -2,6 +2,7 @@ require('dotenv').config();
 const readline = require('readline');
 const { getFanarChatCompletion } = require('./src/core/fanar_service.js');
 const { saveConversation, getConversationById, getAllConversations } = require('./src/core/persistence.js');
+const { personaPrompt } = require('./src/prompts/persona.js');
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -83,7 +84,7 @@ async function main() {
             console.log('Starting new conversation. Type "exit" or "quit" to end.');
             const initialHistory = [{ 
                 role: "system", 
-                content: "You are a helpful legal assistant in Qatar..." 
+                content: personaPrompt
             }];
             chat(initialHistory, null); // Pass null ID for a new conversation
         }

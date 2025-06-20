@@ -3,7 +3,7 @@ const exphbs = require('express-handlebars');
 const path = require('path');
 
 const app = express();
-const homeRoutes = require('./routes/home');
+const homeRoutes = require('./src/api/home.routes');
 
 
 

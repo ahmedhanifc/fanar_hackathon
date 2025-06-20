@@ -19,6 +19,10 @@ app.use(express.json()); // Allows parsing of JSON
 
 app.use("/", homeRouter);
 
+app.use("/api/chat", (req,res) => {
+    res.send("Hello Hello")
+})
+
 
 app.listen(8000, () => {
     console.log("App is running on port:", 8000)

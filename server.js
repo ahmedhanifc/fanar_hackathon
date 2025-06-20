@@ -1,7 +1,11 @@
+//this is the entry point
+
 const express=require('express')
 const bodyParser = require('body-parser')
 const handlebars = require('express-handlebars')
 let app = express()
+require('dotenv').config();
+
 
 
 //All the Routers of Our Application

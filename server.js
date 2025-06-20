@@ -10,7 +10,7 @@ require('dotenv').config();
 
 //All the Routers of Our Application
 
-const homeRouter = require("./routes/home");
+const homeRouter = require("./src/api/home.routes");
 const chatRoutes = require("./src/api/chat.routes")
 
 app.set('views', __dirname + '/templates');

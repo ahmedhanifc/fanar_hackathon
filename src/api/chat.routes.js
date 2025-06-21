@@ -32,19 +32,20 @@ router.post("/start-case", async (req, res) => {
     try {
         const { caseType, language = 'english' } = req.body;
         
-        if (!caseType || !Object.values(CASE_TYPES).includes(caseType)) {
+        if (caseType !== 'cat_case') {
             return res.status(400).json({ 
-                error: 'Valid caseType is required. Options: consumer_complaint, traffic_accident' 
+                error: 'Valid caseType is required. Only option: cat_case' 
             });
         }
 
-        if (!['english', 'arabic'].includes(language)) {
+        if (language !== 'english') {
             return res.status(400).json({ 
-                error: 'Valid language is required. Options: english, arabic' 
+                error: 'Valid language is required. Only option: english' 
             });
         }
 
-        const conversationManager = new CaseConversationManager(language);
+        const conversationManager = new CaseConversationManager();
+        conversationManager.language = language;
         const startResponse = await conversationManager.startCase(caseType);
         
         // Use the conversation ID from the manager
@@ -147,14 +148,12 @@ router.post("/legacy", async (req, res) => {
 // @access  Public
 router.get("/case-types", (req, res) => {
     res.json({
-        caseTypes: Object.values(CASE_TYPES),
+        caseTypes: ['cat_case'],
         descriptions: {
-            consumer_complaint: "Issues with products or services purchased",
-            traffic_accident: "Vehicle-related incidents and accidents"
+            cat_case: "Cat-related mystery or issue"
         },
         languages: {
-            english: "English",
-            arabic: "العربية"
+            english: "English"
         }
     });
 });

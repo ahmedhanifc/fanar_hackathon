@@ -2,7 +2,9 @@ const greetings = [
     'hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening',
     'how are you', 'greetings', 'salaam', 'as-salamu alaykum', 'السلام عليكم'
 ];
-function isGreeting(msg) {
+// Only trigger in 'conversation' mode
+function isGreeting(msg, mode = 'conversation') {
+    if (mode !== 'conversation') return false;
     const lower = msg.trim().toLowerCase();
     return greetings.some(greet => lower.startsWith(greet) || lower === greet);
 }
@@ -10,7 +12,9 @@ function isGreeting(msg) {
 const helpPhrases = [
     'i need help', 'help me', 'i have a case', 'i need assistance', 'can you help', 'need help', 'support', 'assistance', 'i want to report', 'i want to file a case'
 ];
-function isHelpRequest(msg) {
+// Only trigger in 'conversation' mode
+function isHelpRequest(msg, mode = 'conversation') {
+    if (mode !== 'conversation') return false;
     const lower = msg.trim().toLowerCase();
     return helpPhrases.some(phrase => lower.includes(phrase));
 }
@@ -22,7 +26,9 @@ const emotionalPhrases = [
     'my account', 'my card', 'my credit card', 'my bank', 'my information', 'my data', 'my details', 'my password',
     'fraud', 'phishing', 'stolen', 'compromised', 'breach', 'hacked', 'hack', 'scam', 'tricked', 'victim'
 ];
-function isEmotionalOrStory(msg) {
+// Only trigger in 'conversation' mode
+function isEmotionalOrStory(msg, mode = 'conversation') {
+    if (mode !== 'conversation') return false;
     const lower = msg.trim().toLowerCase();
     return emotionalPhrases.some(phrase => lower.includes(phrase));
 }
@@ -30,7 +36,9 @@ function isEmotionalOrStory(msg) {
 const consentPhrases = [
     'yes', "let's start", 'please help', 'start', 'go ahead', 'proceed', 'continue', 'file a report', 'help me file', 'ready', 'ok', 'okay', 'yalla', 'begin'
 ];
-function isConsent(msg) {
+// Only trigger in 'checklist' mode
+function isConsent(msg, mode = 'checklist') {
+    if (mode !== 'checklist') return false;
     const lower = msg.trim().toLowerCase();
     return consentPhrases.some(phrase => lower.includes(phrase));
 }

@@ -31,6 +31,7 @@ class CaseConversationManager {
         this.awaitingCaseDescription = false; // For conversational flow
         this.freeTalkMode = false; // New flag for free talk mode
         this.mode = 'conversation'; // New: track conversation phase
+        this.awaitingChecklistConfirmation = false; // Track if waiting for checklist confirmation
     }
 
     // Start a new case conversation
@@ -46,7 +47,7 @@ class CaseConversationManager {
 
         // Only initialize the system prompt, do not send an opening message
         this.conversationHistory = [
-            { role: 'system', content: createSystemPrompt(caseType, this.language) }
+            { role: 'system', content: this.createSystemPrompt(caseType) }
         ];
 
         return {
@@ -78,31 +79,59 @@ class CaseConversationManager {
     }
 
     async processUserResponse(userMessage) {
-        // MODE SWITCHING LOGIC
-        if (this.mode === 'conversation') {
-            this.conversationHistory.push({ role: 'user', content: userMessage });
-            // Check for report intent
-            if (this.isReportIntent(userMessage)) {
+        // Handle awaiting checklist confirmation
+        if (this.awaitingChecklistConfirmation) {
+            if (this.isAffirmative(userMessage)) {
                 this.mode = 'checklist';
-                // TODO: Optionally ask for case type, or default to one
-                // For now, just start the checklist (simulate caseType)
+                this.awaitingChecklistConfirmation = false;
                 if (!this.currentCase) {
-                    await this.startCase('default'); // TODO: Replace 'default' with actual logic
+                    await this.startCase('default');
                 }
+                const transitionMsg = "Great, let's start the report checklist. I'll ask you a few questions.";
+                this.conversationHistory.push({ role: 'assistant', content: transitionMsg });
                 const currentQuestion = getNextQuestion(this.currentCase.caseType, this.currentCase.data);
                 if (currentQuestion) {
                     const response = await this.generateNextQuestion(currentQuestion);
                     this.conversationHistory.push({ role: 'assistant', content: response });
                     return {
-                        message: response,
+                        message: `${transitionMsg}\n${response}`,
                         options: currentQuestion.options || null,
                         isComplete: false
                     };
                 }
             } else {
+                this.awaitingChecklistConfirmation = false;
+                // Continue conversation mode
+                const prompt = this.createSystemPrompt('conversation');
+                const llmResponse = await getFanarChatCompletion([
+                    { role: 'system', content: prompt },
+                    ...this.conversationHistory,
+                    { role: 'user', content: userMessage }
+                ]);
+                this.conversationHistory.push({ role: 'assistant', content: llmResponse });
+                return {
+                    message: llmResponse,
+                    isComplete: false
+                };
+            }
+        }
+        // MODE SWITCHING LOGIC
+        if (this.mode === 'conversation') {
+            this.conversationHistory.push({ role: 'user', content: userMessage });
+            // Check for report intent
+            if (this.isReportIntent(userMessage)) {
+                // Instead of switching immediately, ask for confirmation
+                this.awaitingChecklistConfirmation = true;
+                const confirmMsg = "Would you like to start the report checklist now?";
+                this.conversationHistory.push({ role: 'assistant', content: confirmMsg });
+                return {
+                    message: confirmMsg,
+                    isComplete: false
+                };
+            } else {
                 // LLM-driven conversation (empathy, small talk, etc.)
-                const prompt = createSystemPrompt(this.mode = 'conversation', this.caseType = '', this.language = 'english'); // Use a general support prompt
-                
+                // Add to system prompt: instruct LLM to ask for confirmation before checklist
+                const prompt = this.createSystemPrompt('conversation');
                 const llmResponse = await getFanarChatCompletion([
                     { role: 'system', content: prompt },
                     ...this.conversationHistory
@@ -122,11 +151,33 @@ class CaseConversationManager {
             // Get current question and field config
             const currentQuestion = getNextQuestion(this.currentCase.caseType, this.currentCase.data);
             if (!currentQuestion) {
-                // No more questions, return a graceful message or summary
-                const summary = await this.generateCaseSummary();
-                this.conversationHistory.push({ role: 'assistant', content: summary });
+                // All questions answered - check for missing required fields
+                const validation = validateCase(this.currentCase.caseType, this.currentCase.data);
+                // Filter out skipped fields from missing fields
+                const actualMissingFields = validation.missingFields.filter(field => 
+                    !this.skippedFields.has(field)
+                );
+                if (actualMissingFields.length > 0) {
+                    const msg = missingMessages(actualMissingFields, this.language);
+                    this.conversationHistory.push({ role: 'assistant', content: msg });
+                    return {
+                        message: msg,
+                        isComplete: false,
+                        caseData: this.currentCase
+                    };
+                }
+                // All required fields are filled or skipped - switch to legal advice mode
+                this.mode = 'legal_advice';
+                // Generate legal advice using the new system prompt
+                const prompt = this.createSystemPrompt('legal_advice');
+                // Optionally, you can load legal sources and append them to the prompt here
+                const llmAdvice = await getFanarChatCompletion([
+                    { role: 'system', content: prompt },
+                    { role: 'user', content: JSON.stringify(this.currentCase.data) }
+                ]);
+                this.conversationHistory.push({ role: 'assistant', content: llmAdvice });
                 return {
-                    message: summary,
+                    message: llmAdvice,
                     isComplete: true,
                     caseData: this.currentCase
                 };
@@ -206,11 +257,16 @@ class CaseConversationManager {
                         caseData: this.currentCase
                     };
                 }
-                // All required fields are filled or skipped - generate summary
-                const summary = await this.generateCaseSummary();
-                this.conversationHistory.push({ role: 'assistant', content: summary });
+                // All required fields are filled or skipped - switch to legal advice mode
+                this.mode = 'legal_advice';
+                const prompt = this.createSystemPrompt('legal_advice');
+                const llmAdvice = await getFanarChatCompletion([
+                    { role: 'system', content: prompt },
+                    { role: 'user', content: JSON.stringify(this.currentCase.data) }
+                ]);
+                this.conversationHistory.push({ role: 'assistant', content: llmAdvice });
                 return {
-                    message: summary,
+                    message: llmAdvice,
                     isComplete: true,
                     caseData: this.currentCase
                 };
@@ -329,7 +385,12 @@ class CaseConversationManager {
 
     // Create system prompt that guides the LLM
     createSystemPrompt(caseType) {
-        return createSystemPrompt(caseType, this.language);
+        // Add instruction: Only offer to start the checklist, do not switch modes yourself
+        let basePrompt = createSystemPrompt(caseType, this.language);
+        if (caseType === 'conversation' || !caseType) {
+            basePrompt += '\nIf the user seems to want to file a report or start a checklist, ask them: "Would you like to start the report checklist now?". Only proceed if the user confirms.';
+        }
+        return basePrompt;
     }
 
     // Helper to get field config from structure
@@ -375,6 +436,15 @@ class CaseConversationManager {
             default:
                 return !!extractedInfo;
         }
+    }
+
+    // Helper to check for affirmative responses
+    isAffirmative(msg) {
+        const affirmatives = [
+            'yes', 'start checklist', 'sure', 'okay', 'yep', 'let\'s start', 'go ahead', 'please do', 'begin', 'start', 'of course', 'affirmative', 'do it', 'continue', 'proceed', 'تمام', 'نعم', 'أجل', 'ابدأ', 'يلا', 'اوكي', 'موافق', 'أوافق', 'أيوه', 'ايوا', 'طيب', 'باشر', 'اكمل', 'أكمل', 'تابع', 'استمر'
+        ];
+        const lowerMsg = msg.toLowerCase();
+        return affirmatives.some(a => lowerMsg.includes(a));
     }
 }
 

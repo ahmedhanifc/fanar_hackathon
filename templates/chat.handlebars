@@ -1,21 +1,17 @@
+{{!-- layout.hbs will wrap this content --}}
 <div class="container">
-    <h2>Chat with Legal Assistant</h2>
-    <div class="chat-box">
-        {{#each messages}}
-        <div class="message user">{{this.user}}</div>
-        <div class="message bot">{{this.bot}}</div>
-        {{/each}}
-    </div>
+    <h2 class="chat-title">Fanar Chat Assistant</h2>
+    <div class="chat-box" id="chat-box">
+    <div class="message bot">Welcome! How can I help you today?</div>
+</div>
 
-    <form action="/send" method="POST" class="chat-form">
-        <input type="text" name="message" placeholder="Type your message">
-        <button type="submit">Send</button>
-    </form>
+<form class="chat-form" action="/chat/send" method="POST">
+    <input type="text" name="message" placeholder="Type your message..." required>
 
     <div class="input-actions">
-        <button class="mic-btn">🎤 Voice Input</button>
-        <input type="file" accept="image/*" class="image-upload">
+        <button type="submit">Send</button>
+        <button type="button">🎤</button>
+        <button type="button">📷</button>
     </div>
-    <a href="/history" class="btn-secondary">View Chat History</a>
-
+</form>
 </div>

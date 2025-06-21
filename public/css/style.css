@@ -1,19 +1,65 @@
-/* Add or update in your existing style.css */
+/* Ensure full-screen centered layout */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f7f9fc;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
+/* Centered container for the login box */
+.container {
+    background: #fff;
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
 
+/* Title */
 .login-title {
     font-size: 1.6rem;
     margin-bottom: 1.5rem;
     color: #222;
+    text-align: center;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem; /* Adds space between username & password */
     margin-bottom: 1.5rem;
+    width: 100%;
 }
 
+.form-group input[type="text"],
+.form-group input[type="password"] {
+    padding: 1rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-sizing: border-box;
+    background-color: #fefefe;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    width: 100%; /* Ensures same width as button */
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus {
+    border-color: #6c0000d4;
+    box-shadow: 0 0 5px rgba(108, 0, 0, 0.3);
+    outline: none;
+}
+
+
+/* Input fields */
 .form input {
     padding: 1rem;
     font-size: 1rem;
@@ -22,12 +68,13 @@
     box-sizing: border-box;
 }
 
+/* Login button */
 .btn-login {
-    background-color: #006c67;
-    color: white;
-    font-weight: bold;
+    width: 100%;
     padding: 1rem;
     border: none;
+    background-color: #6c0000d4;
+    color: white;
     border-radius: 10px;
     font-size: 1rem;
     cursor: pointer;
@@ -35,9 +82,10 @@
 }
 
 .btn-login:hover {
-    background-color: #004d45;
+    background-color: #6c0000d4;
 }
 
+/* "or" divider */
 .or-divider {
     text-align: center;
     color: #888;
@@ -64,16 +112,61 @@
     right: 0;
 }
 
+/* Guest entry link */
 .guest-link {
     text-align: center;
     display: block;
-    color: #006c67;
+    color: #6c0000d4;
     text-decoration: none;
     font-weight: 600;
     font-size: 1rem;
-    margin-top: 10px;
+    margin-bottom: 30px;
 }
 
 .guest-link:hover {
     text-decoration: underline;
+}
+.logo-container {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.logo-img {
+    max-width: 180px;
+    width: 100%;
+    height: auto;
+    display: inline-block;
+}
+
+.chat-box {
+    max-height: 300px;
+    overflow-y: auto;
+    background: #eef2f5;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.chat-form input {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.input-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.input-actions button {
+    flex: 1;
+    margin: 0 5px;
+    padding: 10px;
+    border: none;
+    background-color: #006c67;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
 }

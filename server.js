@@ -4,6 +4,8 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
+app.use(express.static('images'));
+
 
 // Middleware
 app.use(express.json());
@@ -19,6 +21,11 @@ app.use('/api/chat', require('./src/api/chat.routes.js'));
 app.use('/api/cases', require('./src/api/cases.routes.js'));
 app.use('/api/lawyer', require('./src/api/lawyer.routes.js'));
 app.use('/', require('./src/api/home.routes.js'));
+app.get("/chat", (req, res) => {
+    res.render("chat");
+});
+
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

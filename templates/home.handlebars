@@ -1,16 +1,17 @@
 <div class="container">
-    <h1 class="login-title">Welcome to Fanar Legal Assistant</h1>
-    
-    <form class="form">
-        <div class="form-group">
-            <input type="text" placeholder="Username" required />
-            <input type="password" placeholder="Password" required />
-        </div>
+    <div class="logo-container">
+        <img src="/img/logo.png" alt="Fanar Logo" class="logo-img" />
+    </div>
 
-        <button type="submit" class="btn-login">Login</button>
+    <h1 class="login-title">Welcome To Your Legal Assistance</h1>
+
+    <form class="form-group" method="POST" action="/login">
+        <input type="text" name="username" placeholder="Username" required />
+        <input type="password" name="password" placeholder="Password" required />
+        <button class="btn-login" type="submit">Login</button>
     </form>
-
     <div class="or-divider">or</div>
 
-    <a href="/guest" class="guest-link">Enter as Guest</a>
+    <a href="/chat" class="guest-link">Enter as Guest</a>
+
 </div>

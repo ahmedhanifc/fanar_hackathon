@@ -4,17 +4,33 @@ const router = express.Router();
 const { getFanarChatCompletion } = require("../core/fanar_service")
 const { CaseConversationManager } = require("../core/case_conversation.js");
 const { CASE_TYPES } = require("../core/case_structure.js");
-const { ReportGenerator } = require("../core/report_generator.js");
 
 // Store active conversations (in production, use a database)
 const activeConversations = new Map();
+
+// Cleanup old conversations (older than 24 hours)
+const cleanupOldConversations = () => {
+    const now = Date.now();
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    
+    for (const [conversationId, conversationManager] of activeConversations.entries()) {
+        const conversationAge = now - parseInt(conversationId);
+        if (conversationAge > maxAge) {
+            activeConversations.delete(conversationId);
+            console.log(`Cleaned up old conversation: ${conversationId}`);
+        }
+    }
+};
+
+// Run cleanup every hour
+setInterval(cleanupOldConversations, 60 * 60 * 1000);
 
 // @route   POST /api/chat/start-case
 // @desc    Start a new case conversation
 // @access  Public
 router.post("/start-case", async (req, res) => {
     try {
-        const { caseType } = req.body;
+        const { caseType, language = 'english' } = req.body;
         
         if (!caseType || !Object.values(CASE_TYPES).includes(caseType)) {
             return res.status(400).json({ 
@@ -22,22 +38,33 @@ router.post("/start-case", async (req, res) => {
             });
         }
 
-        const conversationManager = new CaseConversationManager();
+        if (!['english', 'arabic'].includes(language)) {
+            return res.status(400).json({ 
+                error: 'Valid language is required. Options: english, arabic' 
+            });
+        }
+
+        const conversationManager = new CaseConversationManager(language);
         const startResponse = await conversationManager.startCase(caseType);
         
-        // Store the conversation manager
-        const conversationId = Date.now().toString();
+        // Use the conversation ID from the manager
+        const conversationId = conversationManager.currentCase.id;
         activeConversations.set(conversationId, conversationManager);
         
         res.json({
             conversationId: conversationId,
             message: startResponse.message,
             options: startResponse.options,
-            caseType: caseType
+            caseType: caseType,
+            language: language
         });
 
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Error starting case:', error);
+        res.status(500).json({ 
+            error: 'Failed to start case conversation',
+            details: error.message 
+        });
     }
 });
 
@@ -49,13 +76,18 @@ router.post("/chat", async (req, res) => {
         const { conversationId, message } = req.body;
 
         if (!conversationId || !message) {
-            return res.status(400).json({ error: 'conversationId and message are required.' });
+            return res.status(400).json({ 
+                error: 'conversationId and message are required.' 
+            });
         }
 
         const conversationManager = activeConversations.get(conversationId);
         
         if (!conversationManager) {
-            return res.status(404).json({ error: 'Conversation not found. Please start a new case.' });
+            return res.status(404).json({ 
+                error: 'Conversation not found. Please start a new case.',
+                conversationId: conversationId
+            });
         }
 
         // Process the user's response through the structured conversation
@@ -64,77 +96,24 @@ router.post("/chat", async (req, res) => {
         // If case is complete, remove from active conversations
         if (response.isComplete) {
             activeConversations.delete(conversationId);
+            console.log(`Completed conversation: ${conversationId}`);
         }
 
         res.json({
+            conversationId: conversationId,
             message: response.message,
             options: response.options,
             isComplete: response.isComplete,
-            caseData: response.caseData || null
+            caseData: response.caseData || null,
+            caseType: conversationManager.currentCase.caseType
         });
 
     } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// @route   POST /api/chat/generate-report
-// @desc    Generate a report for a completed case
-// @access  Public
-router.post("/generate-report", async (req, res) => {
-    try {
-        const { caseData, language = 'english' } = req.body;
-        
-        if (!caseData) {
-            return res.status(400).json({ error: 'caseData is required.' });
-        }
-
-        const reportGenerator = new ReportGenerator();
-        const report = await reportGenerator.generateReport(caseData, language);
-        const filename = reportGenerator.generateFilename(caseData, language);
-        const filepath = await reportGenerator.saveReport(report, filename);
-        
-        res.json({
-            success: true,
-            report: report,
-            filename: filename,
-            filepath: filepath,
-            downloadUrl: `/api/chat/download-report/${filename}`
+        console.error('Error processing chat message:', error);
+        res.status(500).json({ 
+            error: 'Failed to process message',
+            details: error.message 
         });
-
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// @route   GET /api/chat/download-report/:filename
-// @desc    Download a generated report
-// @access  Public
-router.get("/download-report/:filename", async (req, res) => {
-    try {
-        const { filename } = req.params;
-        const path = require('path');
-        const fs = require('fs').promises;
-        
-        const filepath = path.join(__dirname, '../../reports', filename);
-        
-        // Check if file exists
-        try {
-            await fs.access(filepath);
-        } catch (error) {
-            return res.status(404).json({ error: 'Report not found.' });
-        }
-        
-        // Set headers for file download
-        res.setHeader('Content-Type', 'text/plain');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        
-        // Stream the file
-        const fileStream = require('fs').createReadStream(filepath);
-        fileStream.pipe(res);
-        
-    } catch (error) {
-        res.status(500).json({ error: error.message });
     }
 });
 
@@ -155,7 +134,11 @@ router.post("/legacy", async (req, res) => {
         res.json({ reply: botReply });
 
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Error in legacy chat:', error);
+        res.status(500).json({ 
+            error: 'Failed to process legacy chat',
+            details: error.message 
+        });
     }
 });
 
@@ -168,7 +151,21 @@ router.get("/case-types", (req, res) => {
         descriptions: {
             consumer_complaint: "Issues with products or services purchased",
             traffic_accident: "Vehicle-related incidents and accidents"
+        },
+        languages: {
+            english: "English",
+            arabic: "العربية"
         }
+    });
+});
+
+// @route   GET /api/chat/active-conversations
+// @desc    Get count of active conversations (for debugging)
+// @access  Public
+router.get("/active-conversations", (req, res) => {
+    res.json({
+        count: activeConversations.size,
+        conversationIds: Array.from(activeConversations.keys())
     });
 });
 

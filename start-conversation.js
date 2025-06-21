@@ -19,10 +19,9 @@ async function caseBasedChat() {
     // Let user choose language first
     console.log('Please select your preferred language:');
     console.log('1. English');
-    console.log('2. Arabic');
-    console.log('3. Exit');
+    console.log('2. Exit');
     
-    rl.question('\nEnter your choice (1-3): ', async (languageChoice) => {
+    rl.question('\nEnter your choice (1-2): ', async (languageChoice) => {
         let language;
         
         switch (languageChoice) {
@@ -30,9 +29,6 @@ async function caseBasedChat() {
                 language = 'english';
                 break;
             case '2':
-                language = 'arabic';
-                break;
-            case '3':
                 console.log('Goodbye!');
                 rl.close();
                 return;
@@ -44,21 +40,17 @@ async function caseBasedChat() {
         
         // Now let user choose case type
         console.log('\nPlease select a case type:');
-        console.log('1. Consumer Complaint');
-        console.log('2. Traffic Accident');
-        console.log('3. Back to language selection');
+        console.log('1. Cat Case');
+        console.log('2. Back to language selection');
         
-        rl.question('\nEnter your choice (1-3): ', async (choice) => {
+        rl.question('\nEnter your choice (1-2): ', async (choice) => {
             let caseType;
             
             switch (choice) {
                 case '1':
-                    caseType = CASE_TYPES.CONSUMER_COMPLAINT;
+                    caseType = 'cat_case';
                     break;
                 case '2':
-                    caseType = CASE_TYPES.TRAFFIC_ACCIDENT;
-                    break;
-                case '3':
                     caseBasedChat(); // Go back to language selection
                     return;
                 default:
@@ -69,7 +61,8 @@ async function caseBasedChat() {
             
             console.log(`\nStarting ${caseType.replace('_', ' ')} case in ${language}...\n`);
             
-            const conversationManager = new CaseConversationManager(language);
+            const conversationManager = new CaseConversationManager();
+            conversationManager.language = language;
             const startResponse = await conversationManager.startCase(caseType);
             
             console.log(`Assistant: ${startResponse.message}`);

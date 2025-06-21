@@ -7,12 +7,12 @@ const app = express();
 app.use(express.static('images'));
 
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// Set up Handlebars
+// Handlebars setup
+app.engine('handlebars', exphbs.engine({ defaultLayout: 'main', layoutsDir: path.join(__dirname, 'templates/layouts') }));
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'templates'));
 

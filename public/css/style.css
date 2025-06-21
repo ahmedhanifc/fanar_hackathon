@@ -1,104 +1,79 @@
-body {
-    font-family: 'Arial', sans-serif;
-    padding: 10px;
-    margin: 0;
-    background-color: #f7f9fc;
+/* Add or update in your existing style.css */
+
+
+.login-title {
+    font-size: 1.6rem;
+    margin-bottom: 1.5rem;
+    color: #222;
 }
 
-.container {
-    max-width: 600px;
-    margin: auto;
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.form input {
     padding: 1rem;
-    background: #fff;
-    border-radius: 8px;
-}
-
-h1,
-h2 {
-    text-align: center;
-    color: #333;
-}
-
-.form input,
-.chat-form input {
-    width: 100%;
-    padding: 0.75rem;
-    margin: 1rem 0;
+    font-size: 1rem;
     border: 1px solid #ccc;
-    border-radius: 6px;
+    border-radius: 8px;
+    box-sizing: border-box;
 }
 
-button,
-.btn-secondary,
-.btn-cancel {
-    width: 100%;
-    padding: 0.75rem;
-    border: none;
+.btn-login {
     background-color: #006c67;
     color: white;
-    border-radius: 6px;
+    font-weight: bold;
+    padding: 1rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
     cursor: pointer;
-    text-align: center;
-    display: block;
-    margin-top: 10px;
-    text-decoration: none;
+    transition: background-color 0.3s;
 }
 
-button:hover,
-.btn-secondary:hover,
-.btn-cancel:hover {
+.btn-login:hover {
     background-color: #004d45;
 }
 
-.chat-box {
-    max-height: 300px;
-    overflow-y: auto;
-    background: #eef2f5;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 1rem;
+.or-divider {
+    text-align: center;
+    color: #888;
+    margin: 1.5rem 0;
+    position: relative;
+    font-size: 0.9rem;
 }
 
-.message {
-    margin: 5px 0;
-    padding: 10px;
-    border-radius: 6px;
+.or-divider::before,
+.or-divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: #ccc;
 }
 
-.message.user {
-    background-color: #d1f5d3;
-    text-align: right;
+.or-divider::before {
+    left: 0;
 }
 
-.message.bot {
-    background-color: #f1f1f1;
-    text-align: left;
+.or-divider::after {
+    right: 0;
 }
 
-.input-actions {
-    display: flex;
-    justify-content: space-between;
+.guest-link {
+    text-align: center;
+    display: block;
+    color: #006c67;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
     margin-top: 10px;
 }
 
-.image-upload {
-    flex-grow: 1;
-}
-
-.case-list {
-    list-style: none;
-    padding: 0;
-}
-
-.case-list li {
-    background-color: #f8f8f8;
-    padding: 10px;
-    margin-bottom: 8px;
-    border-radius: 6px;
-}
-
-.status {
-    font-weight: bold;
-    float: right;
-    color: #006c67;
+.guest-link:hover {
+    text-decoration: underline;
 }

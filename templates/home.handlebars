@@ -1,7 +1,16 @@
 <div class="container">
-    <h1>Welcome to Fanar Legal Assistant</h1>
-    <form action="/chat" method="GET" class="form">
-        <input type="text" name="username" placeholder="Enter your name" required>
-        <button type="submit">Start Chat</button>
+    <h1 class="login-title">Welcome to Fanar Legal Assistant</h1>
+    
+    <form class="form">
+        <div class="form-group">
+            <input type="text" placeholder="Username" required />
+            <input type="password" placeholder="Password" required />
+        </div>
+
+        <button type="submit" class="btn-login">Login</button>
     </form>
+
+    <div class="or-divider">or</div>
+
+    <a href="/guest" class="guest-link">Enter as Guest</a>
 </div>

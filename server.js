@@ -25,7 +25,9 @@ app.get("/chat", (req, res) => {
     res.render("chat");
 });
 
-
+app.get("/chat-test", (req, res) => {
+    res.render("chat_test");
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

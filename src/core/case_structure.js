@@ -2,54 +2,106 @@
 // You can add more complex, tree-based cases later by following this structure.
 
 const CASE_TYPES = {
-    CAT_CASE: 'cat_case'
+    PHISHING_SMS_CASE: 'phishing_sms_case'
 };
 
-// Simple fields for the dummy case
-const CAT_CASE_FIELDS = {
-    catName: { required: true, type: 'string' },
-    catAge: { required: false, type: 'number' },
-    favoriteFood: { required: false, type: 'string' },
-    isIndoor: { required: false, type: 'boolean' },
-    description: { required: false, type: 'text' }
+// Fields for phishing SMS attack case
+const PHISHING_SMS_CASE_FIELDS = {
+    victimName: { required: false, type: 'string' },
+    victimContact: { required: false, type: 'string' },
+    dateOfIncident: { required: true, type: 'string' },
+    senderNumber: { required: true, type: 'string' },
+    smsContent: { required: true, type: 'text' },
+    linkClicked: { required: false, type: 'boolean' },
+    infoProvided: { required: false, type: 'string' },
+    moneyLost: { required: false, type: 'boolean' },
+    amountLost: { required: false, type: 'number' },
+    reportedToAuthorities: { required: false, type: 'boolean' },
+    authorityReported: { required: false, type: 'string' },
+    description: { required: false, type: 'text' },
+    evidence: { required: false, type: 'text' },
+    status: { required: false, type: 'string' }
 };
 
-// Simple linear question flow for the dummy case
-const CAT_CASE_QUESTIONS = [
+const PHISHING_SMS_CASE_QUESTIONS = [
     {
-        field: 'catName',
-        question: 'What is your cat\'s name?',
+        field: 'victimName',
+        question: "Could you please tell me your name?",
         allowSkip: false
     },
     {
-        field: 'catAge',
-        question: 'How old is your cat?',
+        field: 'victimContact',
+        question: "Can you please tell me your contact information (phone or email)?",
+        allowSkip: false
+    },
+    {
+        field: 'dateOfIncident',
+        question: "When did you receive the phishing SMS?",
+        allowSkip: false
+    },
+    {
+        field: 'senderNumber',
+        question: "Would you mind sharing the phone number that sent the SMS?",
+        allowSkip: false
+    },
+    {
+        field: 'smsContent',
+        question: "Could you share what the SMS said? (You can copy/paste or summarize)",
+        allowSkip: false
+    },
+    {
+        field: 'linkClicked',
+        question: "Did you click any link in the SMS? (yes/no)",
         allowSkip: true
     },
     {
-        field: 'favoriteFood',
-        question: 'What is your cat\'s favorite food?',
+        field: 'infoProvided',
+        question: "Did you provide any personal or sensitive information? If yes, what?",
         allowSkip: true
     },
     {
-        field: 'isIndoor',
-        question: 'Is your cat an indoor cat?',
+        field: 'moneyLost',
+        question: "Did you lose any money as a result? (yes/no)",
+        allowSkip: true
+    },
+    {
+        field: 'amountLost',
+        question: "If money was lost, could you let me know how much? (in your currency)",
+        allowSkip: true
+    },
+    {
+        field: 'reportedToAuthorities',
+        question: "Did you report the incident to any authority? (yes/no)",
+        allowSkip: true
+    },
+    {
+        field: 'authorityReported',
+        question: "If yes, which authority did you report to?",
         allowSkip: true
     },
     {
         field: 'description',
-        question: 'Tell me something interesting about your cat.',
+        question: "Please describe what happened in your own words.",
+        allowSkip: true
+    },
+    {
+        field: 'evidence',
+        question: "Do you have any evidence (e.g., screenshot, file, etc.) you could share?",
+        allowSkip: true
+    },
+    {
+        field: 'status',
+        question: "What is the current status of your case? (open/closed/other)",
         allowSkip: true
     }
 ];
 
-// Helper function to get case structure based on type
 function getCaseStructure(caseType) {
     switch (caseType) {
-        case CASE_TYPES.CAT_CASE:
+        case CASE_TYPES.PHISHING_SMS_CASE:
             return {
-                fields: CAT_CASE_FIELDS,
-                questions: CAT_CASE_QUESTIONS
+                fields: PHISHING_SMS_CASE_FIELDS,
+                questions: PHISHING_SMS_CASE_QUESTIONS
             };
         default:
             throw new Error(`Unknown case type: ${caseType}`);
@@ -133,6 +185,6 @@ module.exports = {
     getCaseStructure,
     getNextQuestion,
     validateCase,
-    CAT_CASE_FIELDS,
-    CAT_CASE_QUESTIONS
+    PHISHING_SMS_CASE_FIELDS,
+    PHISHING_SMS_CASE_QUESTIONS
 };

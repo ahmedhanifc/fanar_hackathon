@@ -9,8 +9,17 @@ const {
     createSystemPrompt,
     extractionPrompt,
     generateOpeningMessage,
-    skipPhrases
+    skipPhrases,
+    smallTalkPrompt,
+    supportivePrompt
 } = require('../prompts/conversation_prompts.js');
+
+const {
+    isGreeting,
+    isHelpRequest,
+    isEmotionalOrStory,
+    isConsent
+} = require('./conversation_utils.js');
 
 class CaseConversationManager {
     constructor() {
@@ -19,6 +28,9 @@ class CaseConversationManager {
         this.skippedFields = new Set(); // Track skipped fields
         this.conversationContext = []; // Store conversation context
         this.language = 'english'; // Default language, can be set externally
+        this.awaitingCaseDescription = false; // For conversational flow
+        this.freeTalkMode = false; // New flag for free talk mode
+        this.mode = 'conversation'; // New: track conversation phase
     }
 
     // Start a new case conversation
@@ -32,49 +44,132 @@ class CaseConversationManager {
             updatedAt: new Date()
         };
 
-        // Get the first question from our structure
-        const firstQuestion = getNextQuestion(caseType, this.currentCase.data);
-        
-        if (!firstQuestion) {
-            throw new Error('No questions found for case type: ' + caseType);
-        }
-        
-        // Create a more natural opening message
-        const openingMessage = generateOpeningMessage(caseType, firstQuestion);
-        
+        // Only initialize the system prompt, do not send an opening message
         this.conversationHistory = [
             { role: 'system', content: createSystemPrompt(caseType, this.language) }
         ];
 
         return {
-            message: openingMessage,
-            options: firstQuestion.options || null,
+            message: null, // No opening message
+            options: null,
             caseId: this.currentCase.id
         };
     }
 
-    async processUserResponse(userMessage) {
-        // Add user message to history
-        this.conversationHistory.push({ role: 'user', content: userMessage });
+    // Detect if user wants to start a report (simple rule-based for now)
+    isReportIntent(userMessage) {
+        const reportPhrases = [
+            'file a report',
+            'report a case',
+            'submit a report',
+            'help me with a report',
+            'start a report',
+            'بلاغ', // Arabic for report
+            'أرغب في تقديم بلاغ',
+            'أريد تقديم بلاغ',
+            'can you help me with a report',
+            'i want to report',
+            'i need to report',
+            'i want to file',
+            'i need to file'
+        ];
+        const lower = userMessage.toLowerCase();
+        return reportPhrases.some(phrase => lower.includes(phrase));
+    }
 
-        // Get current question and field config
-        const currentQuestion = getNextQuestion(this.currentCase.caseType, this.currentCase.data);
-        if (!currentQuestion) {
-            // No more questions, return a graceful message or summary
-            const summary = await this.generateCaseSummary();
-            this.conversationHistory.push({ role: 'assistant', content: summary });
-            return {
-                message: summary,
-                isComplete: true,
-                caseData: this.currentCase
-            };
+    async processUserResponse(userMessage) {
+        // MODE SWITCHING LOGIC
+        if (this.mode === 'conversation') {
+            this.conversationHistory.push({ role: 'user', content: userMessage });
+            // Check for report intent
+            if (this.isReportIntent(userMessage)) {
+                this.mode = 'checklist';
+                // TODO: Optionally ask for case type, or default to one
+                // For now, just start the checklist (simulate caseType)
+                if (!this.currentCase) {
+                    await this.startCase('default'); // TODO: Replace 'default' with actual logic
+                }
+                const currentQuestion = getNextQuestion(this.currentCase.caseType, this.currentCase.data);
+                if (currentQuestion) {
+                    const response = await this.generateNextQuestion(currentQuestion);
+                    this.conversationHistory.push({ role: 'assistant', content: response });
+                    return {
+                        message: response,
+                        options: currentQuestion.options || null,
+                        isComplete: false
+                    };
+                }
+            } else {
+                // LLM-driven conversation (empathy, small talk, etc.)
+                const prompt = createSystemPrompt(this.mode = 'conversation', this.caseType = '', this.language = 'english'); // Use a general support prompt
+                
+                const llmResponse = await getFanarChatCompletion([
+                    { role: 'system', content: prompt },
+                    ...this.conversationHistory
+                ]);
+                this.conversationHistory.push({ role: 'assistant', content: llmResponse });
+                return {
+                    message: llmResponse,
+                    isComplete: false
+                };
+            }
         }
-        // Check if user wants to skip or can't provide information
-        const skipResponse = this.checkForSkipResponse(userMessage);
-        if (skipResponse.shouldSkip) {
-            if (currentQuestion && currentQuestion.allowSkip === false) {
-                // Re-ask, do not skip
-                const clarification = `Sorry, I need this information to proceed. ${currentQuestion.question}`;
+        // TODO: Checklist mode (structured intake)
+        if (this.mode === 'checklist') {
+            // Add user message to history
+            this.conversationHistory.push({ role: 'user', content: userMessage });
+
+            // Get current question and field config
+            const currentQuestion = getNextQuestion(this.currentCase.caseType, this.currentCase.data);
+            if (!currentQuestion) {
+                // No more questions, return a graceful message or summary
+                const summary = await this.generateCaseSummary();
+                this.conversationHistory.push({ role: 'assistant', content: summary });
+                return {
+                    message: summary,
+                    isComplete: true,
+                    caseData: this.currentCase
+                };
+            }
+            // Check if user wants to skip or can't provide information
+            const skipResponse = this.checkForSkipResponse(userMessage);
+            if (skipResponse.shouldSkip) {
+                if (currentQuestion && currentQuestion.allowSkip === false) {
+                    // Re-ask, do not skip
+                    const clarification = `Sorry, I need this information to proceed. ${currentQuestion.question}`;
+                    this.conversationHistory.push({ role: 'assistant', content: clarification });
+                    return {
+                        message: clarification,
+                        options: currentQuestion.options || null,
+                        isComplete: false
+                    };
+                }
+                // Mark current field as skipped and move to next
+                if (currentQuestion) {
+                    this.skippedFields.add(currentQuestion.field);
+                    this.currentCase.data[currentQuestion.field] = 'SKIPPED';
+                }
+                // Get next question
+                const nextQuestion = getNextQuestion(this.currentCase.caseType, this.currentCase.data);
+                if (nextQuestion) {
+                    const response = await this.generateNextQuestion(nextQuestion, true); // true = after skip
+                    this.conversationHistory.push({ role: 'assistant', content: response });
+                    return {
+                        message: response,
+                        options: nextQuestion.options || null,
+                        isComplete: false
+                    };
+                }
+            }
+
+            // Extract information from user's response using LLM
+            const extractedInfo = await this.extractInformation(userMessage);
+            // Get current question and field config
+            const fieldConfig = currentQuestion ? this.getFieldConfig(currentQuestion.field) : null;
+            // Validate extracted info
+            if (!this.validateExtractedInfo(extractedInfo, fieldConfig)) {
+                // If invalid, re-ask the question with clarification
+                const clarification = `Sorry, I need a valid answer for this field. ${currentQuestion.question}`;
                 this.conversationHistory.push({ role: 'assistant', content: clarification });
                 return {
                     message: clarification,
@@ -82,77 +177,47 @@ class CaseConversationManager {
                     isComplete: false
                 };
             }
-            // Mark current field as skipped and move to next
-            if (currentQuestion) {
-                this.skippedFields.add(currentQuestion.field);
-                this.currentCase.data[currentQuestion.field] = 'SKIPPED';
-            }
-            // Get next question
+            // Update case data with extracted information
+            this.updateCaseData(extractedInfo);
+            // Get next question from structure
             const nextQuestion = getNextQuestion(this.currentCase.caseType, this.currentCase.data);
             if (nextQuestion) {
-                const response = await this.generateNextQuestion(nextQuestion, true); // true = after skip
+                // Still have questions to ask
+                const response = await this.generateNextQuestion(nextQuestion);
                 this.conversationHistory.push({ role: 'assistant', content: response });
                 return {
                     message: response,
                     options: nextQuestion.options || null,
                     isComplete: false
                 };
-            }
-        }
-
-        // Extract information from user's response using LLM
-        const extractedInfo = await this.extractInformation(userMessage);
-        // Get current question and field config
-        const fieldConfig = currentQuestion ? this.getFieldConfig(currentQuestion.field) : null;
-        // Validate extracted info
-        if (!this.validateExtractedInfo(extractedInfo, fieldConfig)) {
-            // If invalid, re-ask the question with clarification
-            const clarification = `Sorry, I need a valid answer for this field. ${currentQuestion.question}`;
-            this.conversationHistory.push({ role: 'assistant', content: clarification });
-            return {
-                message: clarification,
-                options: currentQuestion.options || null,
-                isComplete: false
-            };
-        }
-        // Update case data with extracted information
-        this.updateCaseData(extractedInfo);
-        // Get next question from structure
-        const nextQuestion = getNextQuestion(this.currentCase.caseType, this.currentCase.data);
-        if (nextQuestion) {
-            // Still have questions to ask
-            const response = await this.generateNextQuestion(nextQuestion);
-            this.conversationHistory.push({ role: 'assistant', content: response });
-            return {
-                message: response,
-                options: nextQuestion.options || null,
-                isComplete: false
-            };
-        } else {
-            // All questions answered - check for missing required fields
-            const validation = validateCase(this.currentCase.caseType, this.currentCase.data);
-            // Filter out skipped fields from missing fields
-            const actualMissingFields = validation.missingFields.filter(field => 
-                !this.skippedFields.has(field)
-            );
-            if (actualMissingFields.length > 0) {
-                const msg = missingMessages(actualMissingFields, this.language);
-                this.conversationHistory.push({ role: 'assistant', content: msg });
+            } else {
+                // All questions answered - check for missing required fields
+                const validation = validateCase(this.currentCase.caseType, this.currentCase.data);
+                // Filter out skipped fields from missing fields
+                const actualMissingFields = validation.missingFields.filter(field => 
+                    !this.skippedFields.has(field)
+                );
+                if (actualMissingFields.length > 0) {
+                    const msg = missingMessages(actualMissingFields, this.language);
+                    this.conversationHistory.push({ role: 'assistant', content: msg });
+                    return {
+                        message: msg,
+                        isComplete: false,
+                        caseData: this.currentCase
+                    };
+                }
+                // All required fields are filled or skipped - generate summary
+                const summary = await this.generateCaseSummary();
+                this.conversationHistory.push({ role: 'assistant', content: summary });
                 return {
-                    message: msg,
-                    isComplete: false,
+                    message: summary,
+                    isComplete: true,
                     caseData: this.currentCase
                 };
             }
-            // All required fields are filled or skipped - generate summary
-            const summary = await this.generateCaseSummary();
-            this.conversationHistory.push({ role: 'assistant', content: summary });
-            return {
-                message: summary,
-                isComplete: true,
-                caseData: this.currentCase
-            };
         }
+        // TODO: Legal advice and agentic action modes
+        return { message: '[Unknown mode]', isComplete: false };
     }
 
     // Check if user response indicates they want to skip or can't provide info

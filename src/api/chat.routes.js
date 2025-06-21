@@ -29,21 +29,14 @@ setInterval(cleanupOldConversations, 60 * 60 * 1000);
 // @desc    Start a new case conversation
 // @access  Public
 router.post("/start-case", async (req, res) => {
+
+    // Example:
+    // {
+    //     "caseType": "cat_case",
+    //     "language": "english"
+    // }
     try {
         const { caseType, language = 'english' } = req.body;
-        
-        if (caseType !== 'cat_case') {
-            return res.status(400).json({ 
-                error: 'Valid caseType is required. Only option: cat_case' 
-            });
-        }
-
-        if (language !== 'english') {
-            return res.status(400).json({ 
-                error: 'Valid language is required. Only option: english' 
-            });
-        }
-
         const conversationManager = new CaseConversationManager();
         conversationManager.language = language;
         const startResponse = await conversationManager.startCase(caseType);

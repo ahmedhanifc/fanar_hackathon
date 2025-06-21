@@ -135,4 +135,4 @@ module.exports = {
     validateCase,
     CAT_CASE_FIELDS,
     CAT_CASE_QUESTIONS
-}; 
+};

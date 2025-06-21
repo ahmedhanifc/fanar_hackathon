@@ -49,13 +49,9 @@ class CaseConversationManager {
         
         // Language-specific opening messages
         const openingMessages = {
-            'traffic_accident': {
-                english: `I'll help you document your traffic accident. ${firstQuestion.question}`,
+            'cat_case': {
+                english: `I'll help you solve your cat mystery: ${firstQuestion.question}`,
                 arabic: `سأساعدك في توثيق حادثك المروري. ${firstQuestion.question}`
-            },
-            'consumer_complaint': {
-                english: `I'll help you file a consumer complaint. ${firstQuestion.question}`,
-                arabic: `سأساعدك في تقديم شكوى المستهلك. ${firstQuestion.question}`
             }
         };
         

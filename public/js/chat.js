@@ -116,6 +116,23 @@ function formatMessage(message) {
     if (!message) return '';
     
     let formatted = message;
+
+    // Remove all types of quotes at the beginning and end (including smart quotes)
+    formatted = formatted.replace(/^["'`""'']+|["'`""'']+$/g, '');
+    
+    // Remove escaped quotes throughout the text
+    formatted = formatted.replace(/\\"/g, '"');
+    formatted = formatted.replace(/\\'/g, "'");
+    
+    // Remove any remaining leading/trailing whitespace after quote removal
+    formatted = formatted.trim();
+
+    // Remove escaped quotes at the beginning and end
+    formatted = formatted.replace(/^["']|["']$/g, '');
+
+    // Remove escaped quotes throughout the text
+    formatted = formatted.replace(/\\"/g, '"');
+    formatted = formatted.replace(/\\'/g, "'");
     
     // Convert bullet points (*, -, •) to HTML lists
     formatted = formatted.replace(/^\s*[\*\-\•]\s+(.+)$/gm, '<li>$1</li>');
@@ -125,6 +142,8 @@ function formatMessage(message) {
         return '<ul>' + match + '</ul>';
     });
     
+    // Convert bullet points (*, -, •) to HTML lists
+    formatted = formatted.replace(/^\s*[\*\-\•]\s+(.+)$/gm, '<li>$1</li>');
     // Convert **bold** to <strong>
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
@@ -148,6 +167,39 @@ function formatMessage(message) {
     
     // Clean up any double <ul> tags
     formatted = formatted.replace(/<\/ul>\s*<ul>/g, '');
+
+    // Convert bullet points (*, -, •) to HTML lists
+    formatted = formatted.replace(/^\s*[\*\-\•]\s+(.+)$/gm, '<li>$1</li>');
+    // Wrap consecutive list items in <ul> tags
+    formatted = formatted.replace(/(<li>.*<\/li>)/gs, function(match) {
+        return '<ul>' + match + '</ul>';
+    });
     
+    // Convert bullet points (*, -, •) to HTML lists
+    formatted = formatted.replace(/^\s*[\*\-\•]\s+(.+)$/gm, '<li>$1</li>');
+    // Convert **bold** to <strong>
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Convert *italic* to <em>
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Convert headings (## Heading) to <h3>
+    formatted = formatted.replace(/^##\s+(.+)$/gm, '<h3>$1</h3>');
+    
+    // Convert section separators (---) to <hr>
+    formatted = formatted.replace(/^---$/gm, '<hr>');
+    
+    // Convert line breaks to <br>
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    // Handle numbered lists (1. 2. 3.)
+    formatted = formatted.replace(/^\s*(\d+)\.\s+(.+)$/gm, '<ol><li>$2</li></ol>');
+    
+    // Merge consecutive <ol> tags
+    formatted = formatted.replace(/<\/ol>\s*<ol>/g, '');
+    
+    // Clean up any double <ul> tags
+    formatted = formatted.replace(/<\/ul>\s*<ul>/g, '');
+
     return formatted;
 }

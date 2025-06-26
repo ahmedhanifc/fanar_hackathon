@@ -52,15 +52,19 @@ function addMessageToChat(message, sender) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}`;
     
+    // Format the message if it's from the bot
+    const formattedMessage = sender === 'bot' ? formatMessage(message) : message;
+    
     messageDiv.innerHTML = `
         <div class="message-content">
-            ${message}
+            ${formattedMessage}
         </div>
     `;
     
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
+
 
 // Function to show typing indicator
 function showTypingIndicator() {
@@ -107,3 +111,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+function formatMessage(message) {
+    if (!message) return '';
+    
+    let formatted = message;
+    
+    // Convert bullet points (*, -, •) to HTML lists
+    formatted = formatted.replace(/^\s*[\*\-\•]\s+(.+)$/gm, '<li>$1</li>');
+    
+    // Wrap consecutive list items in <ul> tags
+    formatted = formatted.replace(/(<li>.*<\/li>)/gs, function(match) {
+        return '<ul>' + match + '</ul>';
+    });
+    
+    // Convert **bold** to <strong>
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Convert *italic* to <em>
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Convert headings (## Heading) to <h3>
+    formatted = formatted.replace(/^##\s+(.+)$/gm, '<h3>$1</h3>');
+    
+    // Convert section separators (---) to <hr>
+    formatted = formatted.replace(/^---$/gm, '<hr>');
+    
+    // Convert line breaks to <br>
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    // Handle numbered lists (1. 2. 3.)
+    formatted = formatted.replace(/^\s*(\d+)\.\s+(.+)$/gm, '<ol><li>$2</li></ol>');
+    
+    // Merge consecutive <ol> tags
+    formatted = formatted.replace(/<\/ol>\s*<ol>/g, '');
+    
+    // Clean up any double <ul> tags
+    formatted = formatted.replace(/<\/ul>\s*<ul>/g, '');
+    
+    return formatted;
+}

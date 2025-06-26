@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { getFanarChatCompletion } = require("../core/fanar_service")
-const { CaseConversationManager } = require("../core/case_conversation.js");
+const CaseConversationManager = require("../core/case_conversation.js");
 const { CASE_TYPES } = require("../core/case_structure.js");
 
 // Store active conversations (in production, use a database)
@@ -141,9 +141,9 @@ router.post("/legacy", async (req, res) => {
 // @access  Public
 router.get("/case-types", (req, res) => {
     res.json({
-        caseTypes: ['cat_case'],
+        caseTypes: ['phishing_sms_case'],
         descriptions: {
-            cat_case: "Cat-related mystery or issue"
+            phishing_sms_case: "Phishing SMS attack or scam"
         },
         languages: {
             english: "English"

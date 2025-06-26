@@ -13,10 +13,4 @@ router.get('/chat', (req, res) => {
         pageDescription: 'Get help with your legal case'
     });
 });
-
-// Chat test page (for development)
-router.get('/chat-test', (req, res) => {
-    res.render('chat_test');
-});
-
 module.exports = router;

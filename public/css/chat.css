@@ -78,7 +78,7 @@
     gap: 0.8rem;
 }
 
-#user-message {
+#messageInput {
     flex: 1;
     padding: 1rem;
     border: 1px solid #ddd;
@@ -88,7 +88,7 @@
     transition: border-color 0.3s;
 }
 
-#user-message:focus {
+#messageInput:focus {
     border-color: #6c0000d4;
     box-shadow: 0 0 0 2px rgba(108, 0, 0, 0.1);
 }

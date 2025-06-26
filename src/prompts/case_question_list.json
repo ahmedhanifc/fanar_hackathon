@@ -1,0 +1,46 @@
+{
+    "phishing_sms": {
+        "questions": [
+            {
+                "id": "incident_date",
+                "question": "When did you receive the phishing SMS?",
+                "type": "date",
+                "required": true
+            },
+            {
+                "id": "sms_content",
+                "question": "Can you share the content of the SMS you received?",
+                "type": "text",
+                "required": true
+            },
+            {
+                "id": "sender_number",
+                "question": "What was the phone number that sent the SMS?",
+                "type": "text",
+                "required": true
+            },
+            {
+                "id": "payment_amount",
+                "question": "How much money did you transfer?",
+                "type": "number",
+                "required": true
+            },
+            {
+                "id": "payment_method",
+                "question": "What payment method did you use?",
+                "type": "text",
+                "required": true
+            },
+            {
+                "id": "bank_notified",
+                "question": "Have you notified your bank about this incident?",
+                "type": "boolean",
+                "required": true
+            }
+        ],
+        "legal_references": {
+            "cybercrimes_law": "law_14_2014_cybercrimes.txt",
+            "electronic_transactions": "law_16_2010_electronic_transactions.txt"
+        }
+    }
+}

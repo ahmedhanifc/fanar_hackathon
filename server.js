@@ -4,12 +4,13 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-app.use(express.static('images'));
 
+// Static file serving
+app.use(express.static('public'));
 
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
 
 // Handlebars setup
 app.engine('handlebars', exphbs.engine({ defaultLayout: 'main', layoutsDir: path.join(__dirname, 'templates/layouts') }));
@@ -21,13 +22,6 @@ app.use('/api/chat', require('./src/api/chat.routes.js'));
 app.use('/api/cases', require('./src/api/cases.routes.js'));
 app.use('/api/lawyer', require('./src/api/lawyer.routes.js'));
 app.use('/', require('./src/api/home.routes.js'));
-app.get("/chat", (req, res) => {
-    res.render("chat");
-});
-
-app.get("/chat-test", (req, res) => {
-    res.render("chat_test");
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -44,8 +38,12 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`-----------------------------------------`);
+    console.log(`Web interface: http://localhost:${PORT}`);
+    console.log(`Chat interface: http://localhost:${PORT}/chat`);
+    console.log(`-----------------------------------------`);
     console.log(`API endpoints available:`);
+    console.log(`  - /api/chat/* (Chat functionality)`);
     console.log(`  - /api/cases/* (Case management)`);
     console.log(`  - /api/lawyer/* (Lawyer dashboard)`);
-    console.log(`  - /api/chat/* (Chat functionality)`);
 });

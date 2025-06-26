@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-
-const { getFanarChatCompletion } = require("../core/fanar_service")
-const CaseConversationManager = require("../core/case_conversation.js");
-const { CASE_TYPES } = require("../core/case_structure.js");
+const { getFanarChatCompletion } = require("../core/fanar_service");
+const CaseConversationManager = require("../core/case_conversation");
+const { CASE_TYPES } = require("../core/case_structure");
 
 // Store active conversations (in production, use a database)
 const activeConversations = new Map();
@@ -29,14 +28,17 @@ setInterval(cleanupOldConversations, 60 * 60 * 1000);
 // @desc    Start a new case conversation
 // @access  Public
 router.post("/start-case", async (req, res) => {
-
-    // Example:
-    // {
-    //     "caseType": "cat_case",
-    //     "language": "english"
-    // }
     try {
         const { caseType, language = 'english' } = req.body;
+        
+        // Validate case type
+        if (!Object.values(CASE_TYPES).includes(caseType)) {
+            return res.status(400).json({ 
+                error: 'Invalid case type',
+                validTypes: Object.values(CASE_TYPES)
+            });
+        }
+        
         const conversationManager = new CaseConversationManager();
         conversationManager.language = language;
         const startResponse = await conversationManager.startCase(caseType);
@@ -62,8 +64,8 @@ router.post("/start-case", async (req, res) => {
     }
 });
 
-// @route   POST /api/chat
-// @desc    Handles chat messages and gets a response from Fanar
+// @route   POST /api/chat/chat
+// @desc    Process a message in a structured conversation
 // @access  Public
 router.post("/chat", async (req, res) => {
     try {
@@ -96,8 +98,8 @@ router.post("/chat", async (req, res) => {
         res.json({
             conversationId: conversationId,
             message: response.message,
-            options: response.options,
-            isComplete: response.isComplete,
+            options: response.options || [],
+            isComplete: response.isComplete || false,
             caseData: response.caseData || null,
             caseType: conversationManager.currentCase.caseType
         });
@@ -112,7 +114,7 @@ router.post("/chat", async (req, res) => {
 });
 
 // @route   POST /api/chat/legacy
-// @desc    Legacy chat endpoint (your original implementation)
+// @desc    Legacy chat endpoint for open-ended conversations
 // @access  Public
 router.post("/legacy", async (req, res) => {
     try {
@@ -122,7 +124,40 @@ router.post("/legacy", async (req, res) => {
             return res.status(400).json({ error: 'newMessage is required.' });
         }
 
-        const messagesForFanar = [...history, { role: 'user', content: newMessage }];
+        // Create a system message for empathetic legal assistance
+        const systemMessage = {
+            role: 'system',
+            content: `You are Fanar, an empathetic legal assistant specializing in Qatar law. 
+            Your primary goal is to provide emotional support and legal guidance to users who may be distressed.
+            
+            Be compassionate, understanding, and patient. Use a warm, supportive tone.
+            When appropriate, ask if the user would like to start a structured case report to get more formal legal advice.
+            
+            You have knowledge of Qatar's legal system, particularly:
+            - Law No. 14 of 2014 on Combating Cybercrimes
+            - Decree-Law No. 16 of 2010 on Electronic Transactions and Commerce
+            - Law No. 13 of 2016 on Personal Data Protection
+            
+            Today's date is ${new Date().toLocaleDateString()}.`
+        };
+        
+        // Add system message at the beginning if there's no system message yet
+        let messagesForFanar = [];
+        let hasSystemMessage = false;
+        
+        if (history && history.length > 0) {
+            hasSystemMessage = history.some(msg => msg.role === 'system');
+            messagesForFanar = [...history];
+        }
+        
+        if (!hasSystemMessage) {
+            messagesForFanar = [systemMessage, ...messagesForFanar];
+        }
+        
+        // Add the user's new message
+        messagesForFanar.push({ role: 'user', content: newMessage });
+        
+        // Get response from Fanar
         const botReply = await getFanarChatCompletion(messagesForFanar);
         
         res.json({ reply: botReply });
@@ -141,9 +176,9 @@ router.post("/legacy", async (req, res) => {
 // @access  Public
 router.get("/case-types", (req, res) => {
     res.json({
-        caseTypes: ['phishing_sms_case'],
+        caseTypes: Object.values(CASE_TYPES),
         descriptions: {
-            phishing_sms_case: "Phishing SMS attack or scam"
+            [CASE_TYPES.PHISHING_SMS]: "Phishing SMS attack or scam"
         },
         languages: {
             english: "English"

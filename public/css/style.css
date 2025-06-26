@@ -170,3 +170,32 @@ body {
     border-radius: 6px;
     cursor: pointer;
 }
+
+/* Guest link styling */
+.guest-link {
+    display: block;
+    text-align: center;
+    padding: 1rem;
+    background-color: transparent;
+    color: #6c0000d4;
+    border: 1px solid #6c0000d4;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.guest-link:hover {
+    background-color: #f5e5e5;
+}
+
+/* Logo styling */
+.logo-container {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.logo-img {
+    max-width: 150px;
+    height: auto;
+}

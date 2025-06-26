@@ -1,33 +1,93 @@
-# Technical
+# Fanar Legal Assistant
 
+A web-based application designed to serve as a legal guide for individuals in Qatar following an incident, such as a phishing attack, car accident, or workplace dispute.
 
-# Legal Guidance Application
+## Project Overview
 
-## 1. Project Concept
-A web-based mobile application designed to serve as a legal guide for individuals in Qatar following an incident, such as a car accident or a workplace dispute.
+This application uses the Fanar AI API to provide legal guidance through a conversational interface. It offers:
 
-## 2. Stakeholders & Users
+1. Empathetic chat support for users in distress
+2. Structured case information gathering
+3. Legal analysis and advice based on Qatar's laws
+4. Formal report generation with legal citations
+5. Options to connect with lawyers or report to authorities
 
-Primary User: The general public in Qatar needing legal guidance.
-Secondary User: Lawyers and law firms seeking efficiently summarized cases.
+## Project Structure
 
-## 3. User Experience Flow
+```
+fanar_hackathon/
+├── legal_references/           # Legal reference documents
+│   ├── law_13_2016_pdppl.txt
+│   ├── law_14_2014_cybercrimes.txt
+│   └── law_16_2010_electronic_transactions.txt
+├── public/                     # Static assets
+│   ├── css/                    # Stylesheets
+│   │   ├── chat.css            # Chat interface styling
+│   │   └── style.css           # General styling
+│   ├── img/                    # Images and icons
+│   │   └── logo.png
+│   └── js/                     # Client-side JavaScript
+│       └── chat.js             # Chat functionality
+├── src/                        # Server-side code
+│   ├── api/                    # API routes
+│   │   ├── cases.routes.js     # Case management routes
+│   │   ├── chat.routes.js      # Chat functionality routes
+│   │   ├── home.routes.js      # Home page routes
+│   │   ├── lawyer.routes.js    # Lawyer dashboard routes
+│   │   └── reportController.js # Report generation
+│   ├── core/                   # Core functionality
+│   │   ├── case_conversation.js # Case conversation manager
+│   │   ├── case_structure.js   # Case structure definitions
+│   │   └── fanar_service.js    # Fanar API integration
+│   └── prompts/                # LLM prompts
+│       ├── case_question_list.json
+│       ├── conversation_prompts.js
+│       └── empathetic_template.md
+├── templates/                  # Handlebars templates
+│   ├── layouts/
+│   │   └── main.handlebars     # Main layout template
+│   ├── reports/                # Report templates
+│   │   └── phishing_sms_case.english.txt
+│   ├── chat.handlebars         # Chat interface
+│   ├── chat_test.handlebars    # Testing interface
+│   ├── history.handlebars      # Chat history view
+│   ├── home.handlebars         # Homepage
+│   ├── lawyer-dashboard.handlebars # Lawyer dashboard
+│   └── submitted.handlebars    # Submission confirmation
+├── .env                        # Environment variables (not in repo)
+├── .gitignore                  # Git ignore file
+├── fanar_api_docs.md           # Fanar API documentation
+├── package.json                # Node.js dependencies
+├── README.md                   # Project documentation
+└── server.js                   # Main application entry point
+```
 
-For the Individual:
+## Setup Instructions
 
-The user describes their case to the application via text, voice, or by uploading evidence (images).
-An LLM-powered chatbot (Fanar) analyzes the input and asks targeted questions to gather all necessary details.
-Upon gathering sufficient information, the app generates a formal, law-based report, available in either English or Arabic.
-The user has two options:
-Automatically forward the report to a database of registered lawyers/law firms.
-Download the report to present personally to a law firm or the police.
-For the Lawyer/Law Firm:
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Create a `.env` file with your Fanar API key:
+   ```
+   FANAR_API_KEY=your_api_key_here
+   ```
+4. Start the server with `npm start`
+5. Access the application at http://localhost:3000
 
-Access a dashboard listing new cases submitted through the app.
-Review detailed, pre-structured reports in their preferred language.
-This saves significant time in initial client consultation and report drafting.
+## Development
 
-## 4. MVP Technical Specifications
+To run the application in development mode with automatic restarts:
+
+```
+npm run dev
+```
+
+## Current Case Types
+
+- Phishing SMS Case - Help for victims of SMS-based phishing attacks
+
+## Contributors
+
+- Team Fanar Hackathon
 
 Platform: Web-based mobile application.
 Front-End: HTML, CSS, JavaScript.

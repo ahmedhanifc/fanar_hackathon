@@ -1,40 +1,26 @@
-<<<<<<< HEAD
-{{!-- layout.hbs will wrap this content --}}
-<div class="container">
-    <h2 class="chat-title">Fanar Chat Assistant</h2>
-    <div class="chat-box" id="chat-box">
-    <div class="message bot">Welcome! How can I help you today?</div>
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>Fanar Legal Assistant</h1>
+        <p class="chat-subtitle">Your AI-powered guide through legal processes</p>
+    </div>
+    
+    <div class="chat-messages" id="chat-messages">
+        <!-- Messages will be added here dynamically -->
+        <div class="message bot">
+            <div class="message-content">
+                Hello! I'm Fanar, your legal assistant. How can I help you today?
+            </div>
+        </div>
+    </div>
+    
+    <div class="chat-input">
+        <form id="chat-form">
+            <input type="text" id="user-message" placeholder="Type your message..." autocomplete="off">
+            <button type="submit" id="send-button">
+                <span>Send</span>
+            </button>
+        </form>
+    </div>
 </div>
 
-<form class="chat-form" action="/chat/send" method="POST">
-    <input type="text" name="message" placeholder="Type your message..." required>
-
-    <div class="input-actions">
-        <button type="submit">Send</button>
-        <button type="button">🎤</button>
-        <button type="button">📷</button>
-    </div>
-</form>
-</div>
-=======
-{{!-- templates/chat.handlebars --}}
-{{#extend "layouts/main"}}
-  {{#content "body"}}
-    <div class="chat-container">
-      <h2>Chatbot Conversation</h2>
-      <div id="chat-history">
-        {{#each conversation}}
-          <div class="message {{this.role}}">
-            <strong>{{this.role}}:</strong> {{this.content}}
-          </div>
-        {{/each}}
-      </div>
-      <form id="chat-form" method="POST" action="/chat/send">
-        <input type="hidden" name="conversationId" value="{{conversationId}}">
-        <input type="text" name="message" placeholder="Type your message..." autocomplete="off" required>
-        <button type="submit">Send</button>
-      </form>
-    </div>
-  {{/content}}
-{{/extend}}
->>>>>>> 8ea381c427b81e1d35232d18ce7c0add9a189bdd
+<script src="/js/chat-simple.js"></script>

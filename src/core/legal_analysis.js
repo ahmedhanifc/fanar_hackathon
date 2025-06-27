@@ -1,4 +1,5 @@
 const { getFanarChatCompletion } = require('./fanar_service');
+const { createMessagesArray } = require('./system_prompts');
 const fs = require('fs');
 const path = require('path');
 
@@ -37,44 +38,19 @@ async function generateLegalAnalysis(caseData, caseType) {
         console.warn('Warning: Could not read legal text file:', err.message);
     }
 
-    const legalPrompt = `
-You are a Qatari legal expert providing analysis for a ${caseType.replace('_', ' ').toLowerCase()} case.
+    const userMessage = `
+        Case Type: ${caseType.replace('_', ' ').toLowerCase()}
 
-Case Details:
-${caseInfo}
+        Case Details:
+        ${caseInfo}
 
-Reference these relevant Qatari legal texts in your analysis:
-${qatarLegalTexts}
+        Reference these relevant Qatari legal texts in your analysis:
+        ${qatarLegalTexts}
 
-
-Please provide:
-
-1. **Legal Assessment**: Analyze what happened from a legal perspective
-2. **Applicable Laws**: Cite specific Qatari laws and articles that apply. Format each law reference as "According to [Law Name], Article [Number]:" followed by the relevant text.
-3. **Your Rights**: Explain the victim's legal rights and protections, citing specific laws
-4. **Recommended Actions**: Suggest immediate steps to take
-5. **Options Available**: Present clear options that YOU can help with right now
-
-Format your response with empathy and authority. For each option, start with "I can help you:" and explain exactly what you can do.
-
-End with these actionable options:
-
-**What would you like me to do next?**
-• I can help you draft a message to relevant authorities
-• I can generate a formal legal document for your case
-• I can provide contact information for qualified lawyers
-• I can show you similar cases and their outcomes
-• I can guide you through evidence collection steps
-
-Be professional yet empathetic. This person has been through a difficult experience.
-`;
+        Please analyze this case and provide legal guidance.`;
 
     try {
-        const messagesArray = [
-            { role: "system", content: legalPrompt },
-            { role: "user", content: `Please analyze this case and provide legal guidance.` }
-        ];
-        
+        const messagesArray = createMessagesArray(userMessage, 'LEGAL_ANALYSIS');
         const analysis = await getFanarChatCompletion(messagesArray);
         return analysis;
         

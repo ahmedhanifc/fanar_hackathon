@@ -408,36 +408,22 @@ function hideTypingIndicator() {
 }
 
 
-// formatMessage function (existing - keep as is)
 function formatMessage(message) {
     if (!message) return '';
     
     let formatted = message;
 
-    // Remove all types of quotes at the beginning and end (including smart quotes)
+    // Remove all types of quotes at the beginning and end
     formatted = formatted.replace(/^["'`""'']+|["'`""'']+$/g, '');
-    
-    // Remove escaped quotes throughout the text
     formatted = formatted.replace(/\\"/g, '"');
     formatted = formatted.replace(/\\'/g, "'");
-    
-    // Remove any remaining leading/trailing whitespace after quote removal
     formatted = formatted.trim();
 
-    // Remove escaped quotes at the beginning and end
-    formatted = formatted.replace(/^["']|["']$/g, '');
-
-    // Remove escaped quotes throughout the text
-    formatted = formatted.replace(/\\"/g, '"');
-    formatted = formatted.replace(/\\'/g, "'");
+    // Convert ## headings to <h2> for better visual hierarchy
+    formatted = formatted.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
     
-    // Convert bullet points (*, -, •) to HTML lists
-    formatted = formatted.replace(/^\s*[\*\-\•]\s+(.+)$/gm, '<li>$1</li>');
-    
-    // Wrap consecutive list items in <ul> tags
-    formatted = formatted.replace(/(<li>.*<\/li>)/gs, function(match) {
-        return '<ul>' + match + '</ul>';
-    });
+    // Convert ### headings to <h3>
+    formatted = formatted.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
     
     // Convert **bold** to <strong>
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -445,27 +431,42 @@ function formatMessage(message) {
     // Convert *italic* to <em>
     formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
     
-    // Convert headings (## Heading) to <h3>
-    formatted = formatted.replace(/^##\s+(.+)$/gm, '<h3>$1</h3>');
+    // Handle numbered lists (1. 2. 3.) - improved pattern
+    formatted = formatted.replace(/^\s*(\d+)\.\s+(.+)$/gm, '<li class="numbered">$2</li>');
+    
+    // Wrap numbered list items in <ol>
+    formatted = formatted.replace(/(<li class="numbered">.*?<\/li>)/gs, function(match) {
+        const items = match.replace(/class="numbered"/g, '');
+        return '<ol>' + items + '</ol>';
+    });
+    
+    // Handle bullet points (-, *, •) - improved pattern
+    formatted = formatted.replace(/^\s*[-\*\•]\s+(.+)$/gm, '<li class="bullet">$1</li>');
+    
+    // Wrap bullet list items in <ul>
+    formatted = formatted.replace(/(<li class="bullet">.*?<\/li>)/gs, function(match) {
+        const items = match.replace(/class="bullet"/g, '');
+        return '<ul>' + items + '</ul>';
+    });
+    
+    // Clean up consecutive list tags
+    formatted = formatted.replace(/<\/ol>\s*<ol>/g, '');
+    formatted = formatted.replace(/<\/ul>\s*<ul>/g, '');
     
     // Convert section separators (---) to <hr>
     formatted = formatted.replace(/^---$/gm, '<hr>');
     
-    // Convert line breaks to <br>
-    formatted = formatted.replace(/\n/g, '<br>');
+    // Convert line breaks to <br> but preserve existing HTML structure
+    formatted = formatted.replace(/\n(?![<])/g, '<br>');
     
-    // Handle numbered lists (1. 2. 3.)
-    formatted = formatted.replace(/^\s*(\d+)\.\s+(.+)$/gm, '<ol><li>$2</li></ol>');
-    
-    // Merge consecutive <ol> tags
-    formatted = formatted.replace(/<\/ol>\s*<ol>/g, '');
-    
-    // Clean up any double <ul> tags
-    formatted = formatted.replace(/<\/ul>\s*<ul>/g, '');
+    // Clean up extra <br> tags around headings and lists
+    formatted = formatted.replace(/<br>\s*(<h[1-6]>)/g, '$1');
+    formatted = formatted.replace(/(<\/h[1-6]>)\s*<br>/g, '$1');
+    formatted = formatted.replace(/<br>\s*(<[ou]l>)/g, '$1');
+    formatted = formatted.replace(/(<\/[ou]l>)\s*<br>/g, '$1');
 
     return formatted;
 }
-
 // Function to add image preview to chat
 function addImagePreview(imageFile) {
     const chatMessages = document.getElementById('chat-messages');

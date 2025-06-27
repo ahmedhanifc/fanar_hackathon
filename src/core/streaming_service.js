@@ -13,14 +13,45 @@ async function streamFanarChatCompletion(messagesArray, res) {
 
 async function streamLegalAnalysis(caseData, caseType, res) {
     try {
-        // Add a brief introduction before the analysis
+        // Send progress updates instead of streaming tokens
         res.write(`data: ${JSON.stringify({ 
-            type: 'token', 
-            content: "I've analyzed your case and prepared a comprehensive legal assessment. Here's what I found:\n\n" 
+            type: 'progress', 
+            message: 'Analyzing case details...',
+            progress: 20
+        })}\n\n`);
+        
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        res.write(`data: ${JSON.stringify({ 
+            type: 'progress', 
+            message: 'Reviewing relevant Qatari legal texts...',
+            progress: 50
+        })}\n\n`);
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        res.write(`data: ${JSON.stringify({ 
+            type: 'progress', 
+            message: 'Preparing comprehensive legal assessment...',
+            progress: 80
         })}\n\n`);
         
         const analysis = await generateLegalAnalysis(caseData, caseType);
-        await simulateStreamingWithFormatting(analysis, res);
+        
+        res.write(`data: ${JSON.stringify({ 
+            type: 'progress', 
+            message: 'Finalizing analysis...',
+            progress: 100
+        })}\n\n`);
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Send the complete formatted analysis
+        res.write(`data: ${JSON.stringify({ 
+            type: 'complete_analysis', 
+            content: analysis
+        })}\n\n`);
+        
     } catch (error) {
         console.error('Legal analysis streaming error:', error);
         res.write(`data: ${JSON.stringify({ type: 'error', message: 'Failed to generate legal analysis' })}\n\n`);

@@ -1,4 +1,9 @@
 class StreamingChatService {
+    constructor() {
+        this.isLegalAnalysis = false;
+        this.progressElement = null;
+    }
+
     async sendStreamingMessage(message, onToken, onComplete, onError, imageData = null) {
         try {
             const requestBody = { message };
@@ -54,6 +59,20 @@ class StreamingChatService {
                                 onToken(parsed.content, 'token');
                             } else if (parsed.type === 'formatted_chunk') {
                                 onToken(parsed.content, 'formatted', parsed.replaceFrom);
+                            } else if (parsed.type === 'progress') {
+                                // Handle legal analysis progress
+                                if (!this.isLegalAnalysis) {
+                                    this.progressElement = addLegalAnalysisProgress();
+                                    this.isLegalAnalysis = true;
+                                }
+                                updateLegalAnalysisProgress(parsed.progress, parsed.message);
+                            } else if (parsed.type === 'complete_analysis') {
+                                // Handle complete legal analysis
+                                showLegalAnalysisResult(parsed.content);
+                                onComplete && onComplete();
+                                this.isLegalAnalysis = false;
+                                this.progressElement = null;
+                                return;
                             } else if (parsed.type === 'metadata') {
                                 onComplete(parsed);
                             } else if (parsed.type === 'error') {
@@ -70,6 +89,58 @@ class StreamingChatService {
             onError(error.message);
         }
     }
+}
+
+function addLegalAnalysisProgress() {
+    const chatMessages = document.getElementById('chat-messages');
+    const progressDiv = document.createElement('div');
+    progressDiv.className = 'message bot legal-analysis-progress';
+    progressDiv.id = 'legal-analysis-progress';
+    
+    progressDiv.innerHTML = `
+        <div class="message-content">
+            <div class="analysis-progress">
+                <div class="progress-header">
+                    <i class="fas fa-balance-scale"></i>
+                    <span>Preparing Legal Analysis</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="analysis-progress-bar"></div>
+                </div>
+                <div class="progress-message" id="analysis-progress-message">
+                    Initializing analysis...
+                </div>
+            </div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(progressDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return progressDiv;
+}
+
+function updateLegalAnalysisProgress(progress, message) {
+    const progressBar = document.getElementById('analysis-progress-bar');
+    const progressMessage = document.getElementById('analysis-progress-message');
+    
+    if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+    }
+    
+    if (progressMessage) {
+        progressMessage.textContent = message;
+    }
+}
+
+// Remove progress bar and show final analysis
+function showLegalAnalysisResult(content) {
+    const progressDiv = document.getElementById('legal-analysis-progress');
+    if (progressDiv) {
+        progressDiv.remove();
+    }
+    
+    // Add the formatted legal analysis
+    addMessageToChat(content, 'bot');
 }
 
 window.StreamingChatService = StreamingChatService;

@@ -14,16 +14,20 @@ async function classifyCase(conversationHistory) {
         .join('\n');
 
     const classificationPrompt = `
-    You are a legal-case classifier for Qatar.
+        You are a legal case classifier for Qatar. Analyze the user's description and classify it into one of these categories:
 
-    Available case types (return exactly one, uppercase):
-    PHISHING_SMS | GENERAL
+        Available case types:
+        - PHISHING_SMS: SMS phishing attacks, fraudulent text messages, clicking malicious links, financial loss from SMS scams
+        - GENERAL: Cases that don't fit specific categories or need more information
 
-    Respond with ONLY the case type.  
-    If no single category is >50 % confident, return GENERAL.
+        User's description:
+        "${userMessages}"
 
-    User description:
-    "${userMessages}"
+        Keywords to look for PHISHING_SMS:
+        - PHISHING_SMS: "SMS", "text message", "phishing", "clicked link", "bank details", "OTP", "fraudulent message", "scam text","scam message","scammed","financial loss","money lost","bank account compromised"
+
+        Respond with ONLY the case type (e.g., "PHISHING_SMS" or "GENERAL").
+        If unsure or the case involves multiple types, respond with "GENERAL".
     `;
 
     try {

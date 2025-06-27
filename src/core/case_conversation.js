@@ -1,28 +1,10 @@
-/**
- * Case conversation manager
- * Handles the conversation flow for specific case types
- */
 
-const { v4: uuidv4 } = require('uuid');
+
 const { CASE_STRUCTURES, CASE_TYPES } = require('./case_structure');
-const { getFanarChatCompletion } = require('./fanar_service');
-const { 
-    generateEmpatheticPrompt, 
-    generateInterpretativePrompt, 
-    generateCaseSummaryPrompt 
-} = require('../prompts/conversation_prompts');
-
-// Conversation modes
-const CONVERSATION_MODES = {
-    EMPATHETIC: 'empathetic',
-    RULE_BASED: 'rule_based',
-    INTERPRETATIVE: 'interpretative'
-};
 
 class CaseConversationManager {
     constructor() {
         this.currentCase = null;
-        this.language = 'english';
     }
     
     /**
@@ -37,232 +19,155 @@ class CaseConversationManager {
         
         const caseStructure = CASE_STRUCTURES[caseType];
         
+        if (!caseStructure) {
+            throw new Error(`No case structure found for type: ${caseType}`);
+        }
+        
         this.currentCase = {
             id: Date.now().toString(),
             caseType: caseType,
             structure: caseStructure,
-            currentQuestionIndex: -1,
+            currentQuestionIndex: 0, // Start with first question
             answers: {},
-            complete: false,
-            mode: CONVERSATION_MODES.EMPATHETIC,
-            conversationHistory: []
+            complete: false
         };
         
-        // Generate welcome message using Fanar
-        const welcomePrompt = generateEmpatheticPrompt(
-            `I've been a victim of a ${caseStructure.title.toLowerCase()}. Can you help me?`
-        );
-        
-        const welcomeMessage = await getFanarChatCompletion(welcomePrompt);
-        
-        // Store in conversation history
-        this.currentCase.conversationHistory.push(
-            { role: 'user', content: `I've been a victim of a ${caseStructure.title.toLowerCase()}. Can you help me?` },
-            { role: 'assistant', content: welcomeMessage }
-        );
-        
-        return {
-            message: welcomeMessage,
-            options: []
-        };
+        // Return the first question
+        return this.getCurrentQuestionResponse();
     }
     
     /**
-     * Process user response in the conversation
-     * @param {string} userResponse - The user's response to the current question
-     * @returns {Object} Next response in the conversation
+     * Process user response to current question
+     * @param {string} userResponse - The user's response
+     * @returns {Object} Next question or completion status
      */
     async processUserResponse(userResponse) {
         if (!this.currentCase) {
             throw new Error('No active case. Please start a case first.');
         }
         
-        // Add user message to history
-        this.currentCase.conversationHistory.push({ role: 'user', content: userResponse });
-        
-        let response;
-        
-        // Handle response based on the current mode
-        switch (this.currentCase.mode) {
-            case CONVERSATION_MODES.EMPATHETIC:
-                response = await this.handleEmpatheticMode(userResponse);
-                break;
-                
-            case CONVERSATION_MODES.RULE_BASED:
-                response = await this.handleRuleBasedMode(userResponse);
-                break;
-                
-            case CONVERSATION_MODES.INTERPRETATIVE:
-                response = await this.handleInterpretativeMode(userResponse);
-                break;
-                
-            default:
-                throw new Error(`Unknown conversation mode: ${this.currentCase.mode}`);
-        }
-        
-        // Add assistant response to history
-        this.currentCase.conversationHistory.push({ role: 'assistant', content: response.message });
-        
-        return response;
-    }
-    
-    /**
-     * Handle the empathetic conversation mode
-     * @param {string} userResponse - The user's message
-     * @returns {Object} Response object
-     */
-    async handleEmpatheticMode(userResponse) {
-        // Check if the user wants to start the case report
-        const startReportIndicators = [
-            'start', 'report', 'case', 'begin', 'proceed', 'yes', 'legal', 'help me', 'continue'
-        ];
-        
-        const shouldStartReport = startReportIndicators.some(indicator => 
-            userResponse.toLowerCase().includes(indicator)
-        );
-        
-        if (shouldStartReport) {
-            // Switch to rule-based mode
-            this.currentCase.mode = CONVERSATION_MODES.RULE_BASED;
-            return this.advanceToNextQuestion();
-        }
-        
-        // Continue empathetic conversation
-        const prompt = [
-            ...generateEmpatheticPrompt(''),
-            ...this.currentCase.conversationHistory.slice(-4) // Include last 4 messages for context
-        ];
-        
-        // Replace the last system message
-        prompt[0] = {
-            role: 'system',
-            content: `You are Fanar, an empathetic legal assistant specializing in Qatar law. 
-The user is dealing with a ${this.currentCase.structure.title.toLowerCase()}.
-Be compassionate and understanding. Ask if they want to start a formal case report when appropriate.
-Today's date is ${new Date().toLocaleDateString()}.`
-        };
-        
-        const botResponse = await getFanarChatCompletion(prompt);
-        
-        return {
-            message: botResponse,
-            options: []
-        };
-    }
-    
-    /**
-     * Handle the rule-based conversation mode
-     * @param {string} userResponse - The user's response to the current question
-     * @returns {Object} Next question or response
-     */
-    async handleRuleBasedMode(userResponse) {
-        // If this is the first question, advance to it
-        if (this.currentCase.currentQuestionIndex === -1) {
-            return this.advanceToNextQuestion();
-        }
-        
+        // Store the current answer
         const currentQuestion = this.getCurrentQuestion();
-        
-        // Store the user's answer
         this.currentCase.answers[currentQuestion.id] = userResponse;
         
+        // Move to next question
+        this.currentCase.currentQuestionIndex++;
+        
         // Check if we have more questions
-        if (this.currentCase.currentQuestionIndex < this.currentCase.structure.questions.length - 1) {
-            return this.advanceToNextQuestion();
+        if (this.currentCase.currentQuestionIndex < this.currentCase.structure.questions.length) {
+            // Skip conditional questions if needed
+            return this.getCurrentQuestionResponse();
         } else {
-            // Switch to interpretative mode
-            this.currentCase.mode = CONVERSATION_MODES.INTERPRETATIVE;
-            return this.generateLegalAnalysis();
+            // All questions completed
+            this.currentCase.complete = true;
+            return {
+                message: `Thank you for providing all the information. I have collected the following details for your ${this.currentCase.structure.title}:\n\n${this.generateSummary()}`,
+                isComplete: true,
+                caseData: this.currentCase.answers
+            };
         }
     }
     
     /**
-     * Handle the interpretative conversation mode
-     * @param {string} userResponse - The user's message
-     * @returns {Object} Response object
+     * Get current question response, handling conditional logic
+     * @returns {Object} Question response object
      */
-    async handleInterpretativeMode(userResponse) {
-        // Generate a formal case report
-        const prompt = generateCaseSummaryPrompt(this.currentCase.answers, '');
+    getCurrentQuestionResponse() {
+        const question = this.getCurrentQuestion();
         
-        const report = await getFanarChatCompletion(prompt);
+        // Check if this question should be skipped due to conditional logic
+        if (question.conditionalOn) {
+            const conditionQuestion = question.conditionalOn.questionId;
+            const conditionValue = question.conditionalOn.value;
+            
+            if (this.currentCase.answers[conditionQuestion] !== conditionValue) {
+                // Skip this question and move to next
+                this.currentCase.currentQuestionIndex++;
+                
+                // Check if we still have questions
+                if (this.currentCase.currentQuestionIndex < this.currentCase.structure.questions.length) {
+                    return this.getCurrentQuestionResponse(); // Recursive call to check next question
+                } else {
+                    // No more questions
+                    this.currentCase.complete = true;
+                    return {
+                        message: `Thank you for providing all the information. Your case details have been recorded.`,
+                        isComplete: true,
+                        caseData: this.currentCase.answers
+                    };
+                }
+            }
+        }
         
-        // Mark case as complete
-        this.currentCase.complete = true;
+        // Format the question
+        let questionText = question.question;
+        
+        // Add options if available
+        if (question.options && question.options.length > 0) {
+            questionText += "\n\nPlease choose from:\n" + question.options.map((option, index) => `${index + 1}. ${option}`).join('\n');
+        }
+        
+        // Add progress indicator
+        const progress = `(Question ${this.currentCase.currentQuestionIndex + 1} of ${this.currentCase.structure.questions.length})`;
+        questionText = `${progress}\n\n${questionText}`;
         
         return {
-            message: report,
-            options: [
-                "Download report",
-                "Connect with a lawyer",
-                "Report to authorities"
-            ],
-            isComplete: true,
-            caseData: this.currentCase.answers
+            message: questionText,
+            options: question.options || [],
+            questionType: question.type,
+            required: question.required
         };
     }
     
     /**
-     * Generate legal analysis based on case data
-     * @returns {Object} Legal analysis response
-     */
-    async generateLegalAnalysis() {
-        const prompt = generateInterpretativePrompt(this.currentCase.answers);
-        
-        const legalAnalysis = await getFanarChatCompletion(prompt);
-        
-        return {
-            message: `Thank you for providing all the necessary information. Based on what you've told me, here's my legal analysis:\n\n${legalAnalysis}\n\nWould you like me to generate a formal report that you can use for legal proceedings?`,
-            options: ["Yes, generate a report", "No, I just needed the advice"]
-        };
-    }
-    
-    /**
-     * Get the current question
-     * @returns {Object} The current question object
+     * Get the current question object
+     * @returns {Object} Current question
      */
     getCurrentQuestion() {
-        if (!this.currentCase || this.currentCase.currentQuestionIndex === -1) {
-            throw new Error('No current question.');
+        if (!this.currentCase || this.currentCase.currentQuestionIndex >= this.currentCase.structure.questions.length) {
+            throw new Error('No current question available.');
         }
         
         return this.currentCase.structure.questions[this.currentCase.currentQuestionIndex];
     }
     
     /**
-     * Advance to the next question in the flow
-     * @returns {Object} Next question response
+     * Generate a summary of collected answers
+     * @returns {string} Formatted summary
      */
-    async advanceToNextQuestion() {
-        this.currentCase.currentQuestionIndex++;
+    generateSummary() {
+        const answers = this.currentCase.answers;
+        const questions = this.currentCase.structure.questions;
         
-        // Check if we've reached the end of questions
-        if (this.currentCase.currentQuestionIndex >= this.currentCase.structure.questions.length) {
-            // Switch to interpretative mode
-            this.currentCase.mode = CONVERSATION_MODES.INTERPRETATIVE;
-            return this.generateLegalAnalysis();
-        }
+        let summary = "";
         
-        const question = this.getCurrentQuestion();
-        
-        // Check if this question is conditional and should be skipped
-        if (question.conditionalOn) {
-            const conditionQuestion = question.conditionalOn.questionId;
-            const conditionValue = question.conditionalOn.value;
-            
-            if (this.currentCase.answers[conditionQuestion] !== conditionValue) {
-                // Skip this question
-                return this.advanceToNextQuestion();
+        for (const question of questions) {
+            if (answers[question.id]) {
+                summary += `• ${question.question}\n  Answer: ${answers[question.id]}\n\n`;
             }
         }
         
-        // Format options if applicable
-        const options = question.options ? question.options : [];
-        
-        return {
-            message: question.question,
-            options: options
-        };
+        return summary;
+    }
+    
+    /**
+     * Check if case is complete
+     * @returns {boolean} Whether all required questions are answered
+     */
+    isComplete() {
+        return this.currentCase && this.currentCase.complete;
+    }
+    
+    /**
+     * Get case data
+     * @returns {Object} Current case data
+     */
+    getCaseData() {
+        return this.currentCase ? {
+            caseType: this.currentCase.caseType,
+            answers: this.currentCase.answers,
+            complete: this.currentCase.complete
+        } : null;
     }
 }
 

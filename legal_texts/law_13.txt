@@ -1,0 +1,40 @@
+Article 13 – Data Protection by Controller and Processor
+Each Controller and Processor must take precautions to protect Personal Data against loss, damage, alteration, unauthorized access, disclosure, or illegal use.
+Precautions must be proportionate to the data's sensitivity.
+Processors must notify the Controller immediately of any data breaches or emerging risks.
+
+Article 14 – Breach Notification
+Controllers must inform both the affected Individual and the Competent Department of any data protection breaches, especially if it may seriously harm Personal Data or privacy.
+
+Article 22 – Direct Marketing via Electronic Communication
+Electronic communications for direct marketing (e.g., SMS, email) require the prior consent of the Individual.
+Such messages must:
+
+Clearly identify the sender,
+
+State the marketing purpose,
+
+Include a valid and accessible method to opt out or revoke consent.
+
+Article 5 – Rights to Object, Withdraw, and Delete Data
+An Individual may at any time:
+
+Withdraw consent for Personal Data processing.
+
+Object to processing if unnecessary, excessive, discriminatory, unfair, or illegal.
+
+Request deletion or erasure if the processing purpose ends or is unjustified.
+
+Request correction of inaccurate data, with proof.
+
+Article 6 – Right to Access and Notification
+Individuals have the right to:
+
+Be notified of Personal Data processing and its purposes.
+
+Be informed of any disclosure of inaccurate data.
+
+Obtain a copy of their Personal Data for a reasonable fee.
+
+Article 23 – Penalties (General Violations)
+Violations of Articles 4, 8–12, 14, 15, and 22 are subject to fines not exceeding 1,000,000 Qatari Riyals

@@ -86,6 +86,10 @@
     font-size: 1rem;
     outline: none;
     transition: border-color 0.3s;
+    resize: none; /* Prevents manual resizing */
+    min-height: 44px; /* Initial height */
+    max-height: 150px; /* Maximum height */
+    overflow-y: auto; /* Adds scrollbar when needed */
 }
 
 #messageInput:focus {

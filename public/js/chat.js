@@ -46,26 +46,20 @@ async function sendMessage() {
         // Use streaming service with image support
         await streamingService.sendStreamingMessage(
             message,
-            // onToken - called for each word/token
-            (token) => {
-                appendToStreamingMessage(botMessageElement, token);
-            },
-            // onComplete - called when streaming is done
-            (metadata) => {
-                hideTypingIndicator();
-                try {
-                    finalizeStreamingMessage(botMessageElement);
-                    console.log('Streaming complete', metadata);
-                } catch (finalizeError) {
-                    console.error('Error finalizing message:', finalizeError);
-                    if (botMessageElement) {
-                        botMessageElement.classList.remove('streaming');
-                        const cursor = botMessageElement.querySelector('.streaming-cursor');
-                        if (cursor) cursor.remove();
-                    }
+            // Enhanced onToken handler
+            (content, type, replaceFrom) => {
+                if (type === 'formatted') {
+                    replaceInStreamingMessage(botMessageElement, replaceFrom, content);
+                } else {
+                    appendToStreamingMessage(botMessageElement, content);
                 }
             },
-            // onError - called if there's an error
+            // onComplete and onError remain the same
+            (metadata) => {
+                hideTypingIndicator();
+                finalizeStreamingMessage(botMessageElement);
+                console.log('Streaming complete', metadata);
+            },
             (error) => {
                 console.error('Streaming error:', error);
                 hideTypingIndicator();
@@ -74,7 +68,6 @@ async function sendMessage() {
                 }
                 addMessageToChat('Sorry, I\'m having trouble connecting right now. Please try again.', 'bot');
             },
-            // New parameter for image data
             imageData
         );
         
@@ -85,6 +78,24 @@ async function sendMessage() {
         console.error('Error sending message:', error);
         hideTypingIndicator();
         addMessageToChat('Sorry, I\'m having trouble connecting right now. Please try again.', 'bot');
+    }
+}
+
+function replaceInStreamingMessage(messageElement, replaceFrom, formattedContent) {
+    if (!messageElement) return;
+    
+    const textSpan = messageElement.querySelector('.streaming-text');
+    if (!textSpan) return;
+    
+    // Replace the unformatted text with formatted HTML
+    const currentContent = textSpan.innerHTML;
+    const updatedContent = currentContent.replace(replaceFrom, formattedContent);
+    textSpan.innerHTML = updatedContent;
+    
+    // Scroll to bottom
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 }
 
@@ -312,9 +323,9 @@ function appendToStreamingMessage(messageElement, token) {
     const textSpan = messageElement.querySelector('.streaming-text');
     if (!textSpan) return;
     
-    textSpan.textContent += token;
+    // Append as HTML instead of text
+    textSpan.innerHTML += token;
     
-    // Scroll to bottom
     const chatMessages = document.getElementById('chat-messages');
     if (chatMessages) {
         chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -332,7 +343,7 @@ function finalizeStreamingMessage(messageElement) {
     const textSpan = messageElement.querySelector('.streaming-text');
     const cursor = messageElement.querySelector('.streaming-cursor');
     
-    // Check if textSpan exists before accessing its textContent
+    // Check if textSpan exists
     if (!textSpan) {
         console.warn('Streaming text element not found');
         return;
@@ -346,12 +357,23 @@ function finalizeStreamingMessage(messageElement) {
     // Remove streaming class
     messageElement.classList.remove('streaming');
     
-    // Apply formatting to the final text
-    const finalText = formatMessage(textSpan.textContent);
-    const messageContent = messageElement.querySelector('.message-content');
+    // DON'T re-format the text - it's already formatted from streaming!
+    // Just clean up any remaining markdown that wasn't caught during streaming
+    const currentHTML = textSpan.innerHTML;
     
+    // Only apply minimal cleanup for any missed formatting
+    let cleanedHTML = currentHTML;
+    
+    // Handle any remaining **bold** that might have been missed
+    cleanedHTML = cleanedHTML.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Handle any remaining line breaks that weren't processed
+    cleanedHTML = cleanedHTML.replace(/\n/g, '<br>');
+    
+    // Update the content
+    const messageContent = messageElement.querySelector('.message-content');
     if (messageContent) {
-        messageContent.innerHTML = finalText;
+        messageContent.innerHTML = cleanedHTML;
     }
 }
 

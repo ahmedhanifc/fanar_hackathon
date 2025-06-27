@@ -1,22 +1,15 @@
 class StreamingChatService {
-    // Update the method to accept imageData parameter
     async sendStreamingMessage(message, onToken, onComplete, onError, imageData = null) {
         try {
-            // Create request body object including optional image data
             const requestBody = { message };
             if (imageData) {
-                try{
-
-                    if (imageData.length > 1024 * 1024 * 9) { // 9MB limit
+                try {
+                    if (imageData.length > 1024 * 1024 * 9) {
                         throw new Error("Image is too large to upload.");
                     }
                     const base64Data = imageData.includes(',') ? imageData.split(',')[1] : imageData; 
                     requestBody.imageData = base64Data;
-
-                    const sizeInMB = (base64Data.length * 0.75) / (1024 * 1024);
-                    console.log(`Image size: ~${sizeInMB.toFixed(2)}MB`);
-                }
-                catch(error){
+                } catch(error) {
                     console.error('Error processing image data:', error);
                     onError(`Image error: ${error.message}`);
                     return;
@@ -25,10 +18,7 @@ class StreamingChatService {
 
             const response = await fetch('/api/chat/stream', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                // Send the image data along with the message if present
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
             });
 
@@ -36,19 +26,17 @@ class StreamingChatService {
                 throw new Error('Network response was not ok');
             }
 
-            // The rest of your existing stream processing code stays the same
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
 
             while (true) {
                 const { done, value } = await reader.read();
-                
                 if (done) break;
 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
-                buffer = lines.pop(); // Keep incomplete line in buffer
+                buffer = lines.pop();
 
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
@@ -63,7 +51,9 @@ class StreamingChatService {
                             const parsed = JSON.parse(data);
                             
                             if (parsed.type === 'token') {
-                                onToken(parsed.content);
+                                onToken(parsed.content, 'token');
+                            } else if (parsed.type === 'formatted_chunk') {
+                                onToken(parsed.content, 'formatted', parsed.replaceFrom);
                             } else if (parsed.type === 'metadata') {
                                 onComplete(parsed);
                             } else if (parsed.type === 'error') {
@@ -82,5 +72,4 @@ class StreamingChatService {
     }
 }
 
-// Make it globally available
 window.StreamingChatService = StreamingChatService;

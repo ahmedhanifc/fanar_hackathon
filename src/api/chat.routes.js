@@ -17,6 +17,21 @@ const activeConversations = new Map();
 const conversationManager = new ConversationManager();
 
 
+const LEGAL_REPORT_PROMPTS = [
+    "I can help you formulate a legal report. This might help you better understand your situation as well.",
+    "Would you like me to help you create a detailed legal report about your situation?",
+    "Creating a structured legal report could provide clarity on your case. Shall we start one?",
+    "I can guide you through creating a comprehensive legal document for your situation.",
+    "A formal legal report might help organize the details of your case. Would you be interested?",
+    "Let me help you document your case properly with a detailed legal report.",
+    "Would you like to create a structured legal analysis of your situation?"
+];
+
+function getRandomReportPrompt() {
+    return LEGAL_REPORT_PROMPTS[Math.floor(Math.random() * LEGAL_REPORT_PROMPTS.length)];
+}
+
+
 // Set up multer for file storage
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -187,154 +202,6 @@ router.post('/message', async (req, res) => {
     }
 });
 
-
-// router.post('/stream', async (req, res) => {
-//     try {
-//         const { message, promptType = 'INITIAL_CONSULTATION', conversationId = 'default-session' } = req.body;
-        
-//         if (!message) {
-//             return res.status(400).json({ error: 'Message is required' });
-//         }
-
-//         // Set up SSE headers
-//         res.writeHead(200, {
-//             'Content-Type': 'text/event-stream',
-//             'Cache-Control': 'no-cache',
-//             'Connection': 'keep-alive',
-//             'Access-Control-Allow-Origin': '*',
-//             'Access-Control-Allow-Headers': 'Content-Type',
-//         });
-
-//         // Get conversation state
-//         const conversation = conversationManager.getConversation(conversationId);
-        
-//         let fanarResponse;
-//         let showReportPrompt = false;
-
-//         if (conversation.mode === 'GENERATIVE') {
-//             // Check if this is follow-up after completed case
-//             if (conversation.caseCompleted && conversation.completedCaseData) {
-//                 const contextPrompt = `
-//                 The user previously completed a case report with these details:
-//                 ${JSON.stringify(conversation.completedCaseData, null, 2)}
-                
-//                 They are now asking: "${message}"
-                
-//                 Provide helpful guidance based on their specific case details.
-//                 `;
-                
-//                 const messagesArray = [
-//                     { role: "system", content: contextPrompt },
-//                     { role: "user", content: message }
-//                 ];
-                
-//                 // Stream the response
-//                 await streamFanarChatCompletion(messagesArray, res);
-//             }
-//             else{
-//                 const userIntent = await detectUserIntent(message);
-                
-//                 if (userIntent === INTENTS.START_REPORT) {
-//                     // Handle case classification and setup (non-streaming for structured flow)
-//                     const conversationHistory = conversation.messageHistory || [];
-//                     conversationHistory.push({ role: 'user', content: message });
-
-//                     let caseType;
-                    
-//                     try {
-//                         caseType = await classifyCase(conversationHistory);
-//                     } catch (error) {
-//                         console.error('Classification failed:', error);
-//                         caseType = CASE_TYPES.GENERAL;
-//                     }
-                    
-//                     conversationManager.updateConversation(conversationId, { 
-//                         mode: 'REPORT',
-//                         caseType: caseType
-//                     });
-                    
-//                     const caseManager = new CaseConversationManager();
-
-//                     try{
-//                         const initialResponse = await caseManager.startCase(caseType);
-//                         activeConversations.set(conversationId, caseManager);
-
-//                         const response = `I'll help you create a detailed report. Let's start with some specific questions to gather all the necessary information.\n\n${initialResponse.message}`;
-                        
-//                         // Stream this response character by character
-//                         await streamText(response, res);
-//                     }
-//                     catch (error) {
-//                         console.error('Error starting case:', error);
-//                         await streamText("I'm sorry, there was an issue starting your case. Please try again later.", res);
-//                     }
-//                 } else {
-//                     // Stream normal generative chat
-//                     const messagesArray = createMessagesArray(message, promptType);
-//                     await streamFanarChatCompletion(messagesArray, res);
-                    
-//                     // Store message in conversation history
-//                     if (!conversation.messageHistory) conversation.messageHistory = [];
-//                     conversation.messageHistory.push(
-//                         { role: 'user', content: message }
-//                     );
-//                 }
-//             }
-//         } else if (conversation.mode === 'REPORT') {
-//             // Handle structured questioning
-//             const caseManager = activeConversations.get(conversationId);
-            
-//             if (caseManager) {
-//                 const response = await caseManager.processUserResponse(message);
-                
-//                 if(response.isComplete){
-//                     const caseData = response.caseData;
-//                     const caseType = caseManager.getCaseData().caseType;
-
-//                     try{
-//                         // Stream the legal analysis
-//                         await streamLegalAnalysis(caseData, caseType, res);
-
-//                         conversationManager.updateConversation(conversationId, { 
-//                             mode: 'GENERATIVE',
-//                             caseCompleted: true,
-//                             completedCaseData: caseData,
-//                             caseType: caseType
-//                         });
-//                     } catch (error) {
-//                         console.error('Error generating legal analysis:', error);
-//                         await streamText("I've collected all your information. Let me analyze your case and provide legal guidance.", res);
-//                     }
-//                 }
-//                 else{
-//                     await streamText(response.message, res);
-//                 }
-
-//             } else {
-//                 await streamText("I'm sorry, there was an issue with your case session. Let's restart the report process.", res);
-//                 conversationManager.updateConversation(conversationId, { mode: 'GENERATIVE' });
-//             }
-//         }
-
-//         // Send final metadata
-//         res.write(`data: ${JSON.stringify({
-//             type: 'metadata',
-//             conversationMode: conversation.mode,
-//             caseType: conversation.caseType,
-//             showReportPrompt: showReportPrompt,
-//             timestamp: new Date().toISOString()
-//         })}\n\n`);
-
-//         res.write('data: [DONE]\n\n');
-//         res.end();
-        
-//     } catch (error) {
-//         console.error('Streaming chat error:', error);
-//         res.write(`data: ${JSON.stringify({ type: 'error', message: 'Failed to process message' })}\n\n`);
-//         res.end();
-//     }
-// });
-
 // Helper function to stream text character by character
 async function streamText(text, res) {
     const words = text.split(' ');
@@ -492,7 +359,20 @@ router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {
                 
                 // Stream the response
                 await streamFanarChatCompletion(messagesArray, res);
-                
+
+                const messageCount = (conversation.messageHistory || []).length; // Divide by 2 since we store both user and assistant messages
+
+                if (messageCount >= 1 && messageCount <= 3 && !conversation.caseCompleted) {
+                    // Add a small delay before the prompt
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Add the random prompt
+                    const reportPrompt = getRandomReportPrompt();
+                    res.write(`data: ${JSON.stringify({ 
+                        type: 'token', 
+                        content: `\n\n${reportPrompt}` 
+                    })}\n\n`);
+                }
                 // Store message in conversation history
                 if (!conversation.messageHistory) conversation.messageHistory = [];
                 conversation.messageHistory.push(

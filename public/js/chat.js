@@ -1,4 +1,7 @@
-// Your existing sendMessage function is correct
+// Initialize streaming service
+const streamingService = new StreamingChatService();
+
+// Modified sendMessage function to support streaming
 async function sendMessage() {
     console.log("Sending Message...")
     const messageInput = document.getElementById('messageInput');
@@ -14,28 +17,45 @@ async function sendMessage() {
     
     try {
         // Show typing indicator
-        showTypingIndicator();
+        // showTypingIndicator();
         
-        // Send to Fanar API via your backend
-        const response = await fetch('/api/chat/message', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
+        // Create empty bot message for streaming
+        const botMessageElement = addStreamingMessageToChat();
+        
+        // Use streaming service
+        await streamingService.sendStreamingMessage(
+            message,
+            // onToken - called for each word/token
+            (token) => {
+                appendToStreamingMessage(botMessageElement, token);
             },
-            body: JSON.stringify({ message }),
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to send message');
-        }
-        
-        const data = await response.json();
-        
-        // Remove typing indicator
-        hideTypingIndicator();
-        
-        // Add bot response to chat
-        addMessageToChat(data.botResponse, 'bot');
+            // onComplete - called when streaming is done
+            (metadata) => {
+                hideTypingIndicator();
+                try {
+                    finalizeStreamingMessage(botMessageElement);
+                    console.log('Streaming complete', metadata);
+                } catch (finalizeError) {
+                    console.error('Error finalizing message:', finalizeError);
+                    // Fallback: just remove streaming class and cursor if finalization fails
+                    if (botMessageElement) {
+                        botMessageElement.classList.remove('streaming');
+                        const cursor = botMessageElement.querySelector('.streaming-cursor');
+                        if (cursor) cursor.remove();
+                    }
+                }
+            },
+            // onError - called if there's an error
+            (error) => {
+                console.error('Streaming error:', error);
+                hideTypingIndicator();
+                // Check if botMessageElement exists before removing
+                if (botMessageElement && botMessageElement.parentNode) {
+                    botMessageElement.remove();
+                }
+                addMessageToChat('Sorry, I\'m having trouble connecting right now. Please try again.', 'bot');
+            }
+        );
         
     } catch (error) {
         console.error('Error sending message:', error);
@@ -44,9 +64,8 @@ async function sendMessage() {
     }
 }
 
-// ADD THESE MISSING FUNCTIONS:
 
-// Function to add messages to chat
+// Function to add messages to chat (existing - keep as is)
 function addMessageToChat(message, sender) {
     const chatMessages = document.getElementById('chat-messages');
     const messageDiv = document.createElement('div');
@@ -63,10 +82,78 @@ function addMessageToChat(message, sender) {
     
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    return messageDiv;
 }
 
+// New function to create streaming message container
+function addStreamingMessageToChat() {
+    const chatMessages = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message bot streaming';
+    
+    messageDiv.innerHTML = `
+        <div class="message-content">
+            <span class="streaming-text"></span><span class="streaming-cursor">|</span>
+        </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return messageDiv;
+}
 
-// Function to show typing indicator
+// Function to append tokens to streaming message
+function appendToStreamingMessage(messageElement, token) {
+    if (!messageElement) return;
+    
+    const textSpan = messageElement.querySelector('.streaming-text');
+    if (!textSpan) return;
+    
+    textSpan.textContent += token;
+    
+    // Scroll to bottom
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+}
+
+// Function to finalize streaming message
+function finalizeStreamingMessage(messageElement) {
+    // Add safety checks for all DOM elements
+    if (!messageElement) {
+        console.warn('Message element not found during finalization');
+        return;
+    }
+
+    const textSpan = messageElement.querySelector('.streaming-text');
+    const cursor = messageElement.querySelector('.streaming-cursor');
+    
+    // Check if textSpan exists before accessing its textContent
+    if (!textSpan) {
+        console.warn('Streaming text element not found');
+        return;
+    }
+    
+    // Remove cursor if it exists
+    if (cursor) {
+        cursor.remove();
+    }
+    
+    // Remove streaming class
+    messageElement.classList.remove('streaming');
+    
+    // Apply formatting to the final text
+    const finalText = formatMessage(textSpan.textContent);
+    const messageContent = messageElement.querySelector('.message-content');
+    
+    if (messageContent) {
+        messageContent.innerHTML = finalText;
+    }
+}
+
+// Function to show typing indicator 
+
 function showTypingIndicator() {
     const chatMessages = document.getElementById('chat-messages');
     const typingDiv = document.createElement('div');
@@ -87,7 +174,7 @@ function showTypingIndicator() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Function to hide typing indicator
+// Function to hide typing indicator (existing - keep as is)
 function hideTypingIndicator() {
     const typingIndicator = document.getElementById('typing-indicator');
     if (typingIndicator) {
@@ -95,7 +182,7 @@ function hideTypingIndicator() {
     }
 }
 
-// Event listeners
+// Event listeners (existing - keep as is)
 document.addEventListener('DOMContentLoaded', function() {
     // Handle form submission
     document.getElementById('chat-form').addEventListener('submit', function(e) {
@@ -112,6 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// formatMessage function (existing - keep as is)
 function formatMessage(message) {
     if (!message) return '';
     
@@ -142,41 +230,6 @@ function formatMessage(message) {
         return '<ul>' + match + '</ul>';
     });
     
-    // Convert bullet points (*, -, •) to HTML lists
-    formatted = formatted.replace(/^\s*[\*\-\•]\s+(.+)$/gm, '<li>$1</li>');
-    // Convert **bold** to <strong>
-    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // Convert *italic* to <em>
-    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    
-    // Convert headings (## Heading) to <h3>
-    formatted = formatted.replace(/^##\s+(.+)$/gm, '<h3>$1</h3>');
-    
-    // Convert section separators (---) to <hr>
-    formatted = formatted.replace(/^---$/gm, '<hr>');
-    
-    // Convert line breaks to <br>
-    formatted = formatted.replace(/\n/g, '<br>');
-    
-    // Handle numbered lists (1. 2. 3.)
-    formatted = formatted.replace(/^\s*(\d+)\.\s+(.+)$/gm, '<ol><li>$2</li></ol>');
-    
-    // Merge consecutive <ol> tags
-    formatted = formatted.replace(/<\/ol>\s*<ol>/g, '');
-    
-    // Clean up any double <ul> tags
-    formatted = formatted.replace(/<\/ul>\s*<ul>/g, '');
-
-    // Convert bullet points (*, -, •) to HTML lists
-    formatted = formatted.replace(/^\s*[\*\-\•]\s+(.+)$/gm, '<li>$1</li>');
-    // Wrap consecutive list items in <ul> tags
-    formatted = formatted.replace(/(<li>.*<\/li>)/gs, function(match) {
-        return '<ul>' + match + '</ul>';
-    });
-    
-    // Convert bullet points (*, -, •) to HTML lists
-    formatted = formatted.replace(/^\s*[\*\-\•]\s+(.+)$/gm, '<li>$1</li>');
     // Convert **bold** to <strong>
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     

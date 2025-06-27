@@ -8,12 +8,9 @@
         <!-- Messages will be added here dynamically -->
         <div class="message bot">
             <div class="message-content">
-                Hello, I’m Fanar — your AI legal advisor. I provide legal guidance based on laws and regulations. <br><br>
-                Please feel free to tell me what legal issue or question you’re facing, and I’ll do my best to assist you clearly and directly. <br><br>
-                Let’s begin whenever you're ready.
-
-
-
+                Hello, I'm Fanar — your AI legal advisor. I provide legal guidance based on laws and regulations. <br><br>
+                Please feel free to tell me what legal issue or question you're facing, and I'll do my best to assist you clearly and directly. <br><br>
+                Let's begin whenever you're ready.
             </div>
         </div>
     </div>
@@ -28,4 +25,23 @@
     </div>
 </div>
 
+<script src="/js/StreamingChatService.js"></script>
 <script src="/js/chat.js"></script>
+
+<style>
+/* Add these CSS styles for streaming cursor */
+.streaming-cursor {
+    animation: blink 1s infinite;
+    color: #007bff;
+    font-weight: bold;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+.message.streaming .message-content {
+    position: relative;
+}
+</style>

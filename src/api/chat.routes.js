@@ -50,6 +50,7 @@ const upload = multer({
 });
 
 router.post('/message', async (req, res) => {
+    console.log("Hello from chat message route");
     try {
         const { message, promptType = 'INITIAL_CONSULTATION', conversationId = 'default-session' } = req.body;
         
@@ -416,10 +417,6 @@ router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {
             
             // Continue with existing message handling logic based on conversation mode
             if (conversation.mode === 'GENERATIVE') {
-                // Existing generative mode code...
-                // (Your existing streaming logic remains mostly the same)
-                
-                // Create messages array with image context if available
                 let messagesArray;
                 if (conversation.caseCompleted && conversation.completedCaseData) {
                     // Handle completed case scenario
@@ -439,15 +436,58 @@ router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {
                         { role: "user", content: message }
                     ];
                 } else {
-                    // Normal generative chat
-                    const baseMessagesArray = createMessagesArray(message, promptType);
-                    
-                    // If we have image analysis, enhance the system prompt
-                    if (imageAnalysisResult) {
-                        baseMessagesArray[0].content += `\n\nThe user has shared an image that shows: ${imageAnalysisResult}. Consider this information when responding.`;
-                    }
-                    
-                    messagesArray = baseMessagesArray;
+                    const userIntent = await detectUserIntent(message);
+                    if (userIntent === INTENTS.START_REPORT) {
+                        // Classify the case before starting report
+                        const conversationHistory = conversation.messageHistory || [];
+                        conversationHistory.push({ role: 'user', content: message });
+
+                        let caseType;
+                        
+                        try {
+                            caseType = await classifyCase(conversationHistory);
+                        } catch (error) {
+                            console.error('Classification failed:', error);
+                            caseType = CASE_TYPES.GENERAL;
+                        }
+                        
+                        // Update conversation with classified case type
+                        conversationManager.updateConversation(conversationId, { 
+                            mode: 'REPORT',
+                            caseType: caseType
+                        });
+                        
+                        // Create new case conversation manager with the classified type
+                        const caseManager = new CaseConversationManager();
+
+                        try {
+                            const initialResponse = await caseManager.startCase(caseType);
+                            activeConversations.set(conversationId, caseManager);
+
+                            const response = `I'll help you create a detailed report. Let's start with some specific questions to gather all the necessary information.\n\n${initialResponse.message}`;
+                            
+                            // Stream this response character by character
+                            await streamText(response, res);
+                            
+                            // Important: Return early to avoid executing the streaming code below
+                            return;
+                        }
+                        catch (error) {
+                            console.error('Error starting case:', error);
+                            await streamText("I'm sorry, there was an issue starting your case. Please try again later.", res);
+                            return;
+                        }
+                    } else {
+                        // Normal generative chat (existing code)
+                        const baseMessagesArray = createMessagesArray(message, promptType);
+                        
+                        // If we have image analysis, enhance the system prompt
+                        if (imageAnalysisResult) {
+                            baseMessagesArray[0].content += `\n\nThe user has shared an image that shows: ${imageAnalysisResult}. Consider this information when responding.`;
+                        }
+                        
+                        messagesArray = baseMessagesArray;
+                    }    
                 }
                 
                 // Stream the response
@@ -459,8 +499,38 @@ router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {
                     { role: 'user', content: message + (imageAnalysisResult ? ' [Shared image]' : '') }
                 );
             } else if (conversation.mode === 'REPORT') {
-                // Existing REPORT mode logic
-                // (Your existing report-related code)
+                // Handle structured questioning
+                const caseManager = activeConversations.get(conversationId);
+                
+                if (caseManager) {
+                    const response = await caseManager.processUserResponse(message);
+                    
+                    if(response.isComplete){
+                        const caseData = response.caseData;
+                        const caseType = caseManager.getCaseData().caseType;
+
+                        try{
+                            // Stream the legal analysis
+                            await streamLegalAnalysis(caseData, caseType, res);
+
+                            conversationManager.updateConversation(conversationId, { 
+                                mode: 'GENERATIVE',
+                                caseCompleted: true,
+                                completedCaseData: caseData,
+                                caseType: caseType
+                            });
+                        } catch (error) {
+                            console.error('Error generating legal analysis:', error);
+                            await streamText("I've collected all your information. Let me analyze your case and provide legal guidance.", res);
+                        }
+                    }
+                    else{
+                        await streamText(response.message, res);
+                    }
+                } else {
+                    await streamText("I'm sorry, there was an issue with your case session. Let's restart the report process.", res);
+                    conversationManager.updateConversation(conversationId, { mode: 'GENERATIVE' });
+                }
             }
         } else if (imageAnalysisResult) {
             // If only an image was sent (no text), add a prompt for follow-up

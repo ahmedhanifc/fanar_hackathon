@@ -6,6 +6,8 @@ const CaseConversationManager = require("../core/case_conversation");
 const { CASE_TYPES } = require("../core/case_structure");
 const { detectUserIntent, INTENTS } = require("../core/intent_detection");
 const ConversationManager = require("../core/conversation_manager");
+const { classifyCase } = require("../core/case_classification");
+
 
 // Store active conversations (in production, use a database)
 const activeConversations = new Map();
@@ -20,7 +22,6 @@ router.post('/message', async (req, res) => {
             return res.status(400).json({ error: 'Message is required' });
         }
 
-        
         // Get conversation state
         const conversation = conversationManager.getConversation(conversationId);
         
@@ -32,25 +33,64 @@ router.post('/message', async (req, res) => {
             const userIntent = await detectUserIntent(message);
             
             if (userIntent === INTENTS.START_REPORT) {
-                // User wants to start report process
-                conversationManager.updateConversation(conversationId, { mode: 'REPORT' });
-                fanarResponse = "Great! I'll help you create a detailed report. This will help us understand your situation better and provide more targeted assistance. Let's start with the basics - can you describe what happened in your own words?";
+                // Classify the case before starting report
+                const conversationHistory = conversation.messageHistory || [];
+                conversationHistory.push({ role: 'user', content: message });
+                
+                const caseType = await classifyCase(conversationHistory);
+                
+                // Update conversation with classified case type
+                conversationManager.updateConversation(conversationId, { 
+                    mode: 'REPORT',
+                    caseType: caseType
+                });
+                
+                // Create new case conversation manager with the classified type
+                const caseManager = new CaseConversationManager();
+                await caseManager.startCase(caseType);
+                
+                // Store the case manager in the conversation
+                activeConversations.set(conversationId, caseManager);
+                
+                fanarResponse = `Great! I've identified this as a ${caseType.replace('_', ' ').toLowerCase()} case. I'll help you create a detailed report. Let's start with some specific questions to gather all the necessary information.`;
+                
             } else {
                 // Continue with normal generative chat
                 const messagesArray = createMessagesArray(message, promptType);
                 fanarResponse = await getFanarChatCompletion(messagesArray);
+                
+                // Store message in conversation history
+                if (!conversation.messageHistory) conversation.messageHistory = [];
+                conversation.messageHistory.push(
+                    { role: 'user', content: message },
+                    { role: 'assistant', content: fanarResponse }
+                );
             }
+            
         } else if (conversation.mode === 'REPORT') {
-            // Handle report mode (placeholder for now)
-            fanarResponse = "Thank you for that information. Report mode is under development. For now, I can continue helping you in chat mode.";
-            // Reset to generative mode for now
-            conversationManager.updateConversation(conversationId, { mode: 'GENERATIVE' });
+            // Handle structured questioning using the case manager
+            const caseManager = activeConversations.get(conversationId);
+            
+            if (caseManager) {
+                const response = await caseManager.processUserResponse(message);
+                fanarResponse = response.message;
+                
+                // Check if case is complete
+                if (response.isComplete) {
+                    fanarResponse += "\n\nYour case report has been completed. Would you like me to generate a formal document or connect you with a lawyer?";
+                }
+            } else {
+                // Fallback if case manager is lost
+                fanarResponse = "I'm sorry, there was an issue with your case session. Let's restart the report process.";
+                conversationManager.updateConversation(conversationId, { mode: 'GENERATIVE' });
+            }
         }
 
         res.json({
             userMessage: message,
             botResponse: fanarResponse,
             conversationMode: conversation.mode,
+            caseType: conversation.caseType,
             showReportPrompt: showReportPrompt,
             timestamp: new Date().toISOString()
         });

@@ -1,201 +1,202 @@
-/* Ensure full-screen centered layout */
+@import url('variables.css');
+
+/* Base styles */
 body {
-    font-family: 'Arial', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f7f9fc;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  font-family: var(--font-family);
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-light);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  line-height: var(--line-height);
+  color: var(--text-dark);
 }
 
 /* Centered container for the login box */
 .container {
-    background: #fff;
-    padding: 2rem;
-    max-width: 400px;
-    width: 90%;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-/* Title */
-.login-title {
-    font-size: 1.6rem;
-    margin-bottom: 1.5rem;
-    color: #222;
-    text-align: center;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem; /* Adds space between username & password */
-    margin-bottom: 1.5rem;
-    width: 100%;
-}
-
-.form-group input[type="text"],
-.form-group input[type="password"] {
-    padding: 1rem;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    box-sizing: border-box;
-    background-color: #fefefe;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-    width: 100%; /* Ensures same width as button */
-    transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-.form-group input:focus {
-    border-color: #6c0000d4;
-    box-shadow: 0 0 5px rgba(108, 0, 0, 0.3);
-    outline: none;
-}
-
-
-/* Input fields */
-.form input {
-    padding: 1rem;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-sizing: border-box;
-}
-
-/* Login button */
-.btn-login {
-    width: 100%;
-    padding: 1rem;
-    border: none;
-    background-color: #6c0000d4;
-    color: white;
-    border-radius: 10px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.btn-login:hover {
-    background-color: #6c0000d4;
-}
-
-/* "or" divider */
-.or-divider {
-    text-align: center;
-    color: #888;
-    margin: 1.5rem 0;
-    position: relative;
-    font-size: 0.9rem;
-}
-
-.or-divider::before,
-.or-divider::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    width: 40%;
-    height: 1px;
-    background: #ccc;
-}
-
-.or-divider::before {
-    left: 0;
-}
-
-.or-divider::after {
-    right: 0;
-}
-
-/* Guest entry link */
-.guest-link {
-    text-align: center;
-    display: block;
-    color: #6c0000d4;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 1rem;
-    margin-bottom: 30px;
-}
-
-.guest-link:hover {
-    text-decoration: underline;
-}
-.logo-container {
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
-.logo-img {
-    max-width: 180px;
-    width: 100%;
-    height: auto;
-    display: inline-block;
-}
-
-.chat-box {
-    max-height: 300px;
-    overflow-y: auto;
-    background: #eef2f5;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-}
-
-.chat-form input {
-    width: 100%;
-    padding: 0.75rem;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-}
-
-.input-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-}
-
-.input-actions button {
-    flex: 1;
-    margin: 0 5px;
-    padding: 10px;
-    border: none;
-    background-color: #006c67;
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-/* Guest link styling */
-.guest-link {
-    display: block;
-    text-align: center;
-    padding: 1rem;
-    background-color: transparent;
-    color: #6c0000d4;
-    border: 1px solid #6c0000d4;
-    border-radius: 10px;
-    text-decoration: none;
-    font-weight: bold;
-    transition: all 0.3s ease;
-}
-
-.guest-link:hover {
-    background-color: #f5e5e5;
+  background: var(--bg-white);
+  padding: var(--space-xl);
+  max-width: 400px;
+  width: 90%;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* Logo styling */
 .logo-container {
-    text-align: center;
-    margin-bottom: 1.5rem;
+  text-align: center;
+  margin-bottom: var(--space-lg);
 }
 
 .logo-img {
-    max-width: 150px;
-    height: auto;
+  max-width: 150px;
+  height: auto;
+  transition: var(--transition-medium);
+}
+
+.logo-img:hover {
+  transform: scale(1.03);
+}
+
+/* Title */
+.login-title {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--space-lg);
+  color: var(--text-dark);
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Form styles */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  width: 100%;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"] {
+  padding: var(--space-md);
+  font-size: var(--font-size-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  background-color: var(--bg-white);
+  box-shadow: var(--shadow-inset);
+  width: 100%;
+  transition: var(--transition-medium);
+}
+
+.form-group input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+  outline: none;
+}
+
+/* Login button */
+.btn-login {
+  width: 100%;
+  padding: var(--space-md);
+  border: none;
+  background-color: var(--primary);
+  color: var(--text-white);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-medium);
+}
+
+.btn-login:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-login:active {
+  transform: translateY(0);
+}
+
+/* "or" divider */
+.or-divider {
+  text-align: center;
+  color: var(--text-light);
+  margin: var(--space-lg) 0;
+  position: relative;
+  font-size: var(--font-size-sm);
+}
+
+.or-divider::before,
+.or-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: var(--border-medium);
+}
+
+.or-divider::before {
+  left: 0;
+}
+
+.or-divider::after {
+  right: 0;
+}
+
+/* Guest link styling */
+.guest-link {
+  display: block;
+  text-align: center;
+  padding: var(--space-md);
+  background-color: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  margin-bottom: var(--space-lg);
+  transition: var(--transition-medium);
+}
+
+.guest-link:hover {
+  background-color: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Chat-related styles - consider moving to chat.css */
+.chat-box {
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--bg-medium);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
+.chat-form input {
+  width: 100%;
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+
+.input-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-md);
+}
+
+.input-actions button {
+  flex: 1;
+  margin: 0 5px;
+  padding: var(--space-md);
+  border: none;
+  background-color: var(--primary);
+  color: var(--text-white);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-medium);
+}
+
+.input-actions button:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .container {
+    padding: var(--space-lg);
+    width: 95%;
+  }
 }

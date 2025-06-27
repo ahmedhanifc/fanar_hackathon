@@ -9,12 +9,44 @@ const ConversationManager = require("../core/conversation_manager");
 const { classifyCase } = require("../core/case_classification");
 const { generateLegalAnalysis } = require("../core/legal_analysis");
 const { streamFanarChatCompletion, streamLegalAnalysis } = require("../core/streaming_service");
-
+const multer = require('multer');
 
 // Store active conversations (in production, use a database)
 const activeConversations = new Map();
 const conversationManager = new ConversationManager();
 
+
+// Set up multer for file storage
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = path.join(__dirname, '../../uploads');
+        // Create directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+// File filter to accept only images
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Not an image! Please upload an image.'), false);
+    }
+};
+
+const upload = multer({ 
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: fileFilter
+});
 
 router.post('/message', async (req, res) => {
     try {

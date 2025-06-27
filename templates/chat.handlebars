@@ -1,3 +1,5 @@
+
+
 <div class="chat-container">
     <div class="chat-header">
         <h1>Fanar Legal Assistant</h1>
@@ -17,7 +19,14 @@
     
     <div class="chat-input">
         <form id="chat-form">
+            <button type="button" id="voice-button" title="Speak your message">
+                <i class="fas fa-microphone"></i>
+            </button>
             <textarea id="messageInput" placeholder="Type your message..." autocomplete="off" rows="1"></textarea>
+            <label for="imageInput" class="image-upload-btn" title="Upload image">
+                <i class="fas fa-image"></i>
+            </label>
+            <input type="file" id="imageInput" accept="image/*" style="display: none">
             <button type="submit" id="send-button">
                 <span>Send</span>
             </button>

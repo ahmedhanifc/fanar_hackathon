@@ -1,0 +1,50 @@
+:root {
+  /* Color palette */
+  --primary: #6c0000;
+  --primary-hover: #590000;
+  --primary-light: rgba(108, 0, 0, 0.1);
+  --text-dark: #222222;
+  --text-medium: #333333;
+  --text-light: #888888;
+  --text-white: #ffffff;
+  --bg-white: #ffffff;
+  --bg-light: #f7f9fc;
+  --bg-medium: #eef2f5;
+  --bg-chat: #f0f0f0;
+  --border-light: #dddddd;
+  --border-medium: #cccccc;
+  --error: #ff4b4b;
+  
+  /* Spacing */
+  --space-xs: 0.5rem;
+  --space-sm: 0.8rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
+  --radius-pill: 24px;
+  --radius-circle: 50%;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
+  --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  /* Typography */
+  --font-family: 'Arial', sans-serif;
+  --line-height: 1.5;
+  --font-size-sm: 0.9rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.2rem;
+  --font-size-xl: 1.6rem;
+  
+  /* Transitions */
+  --transition-fast: all 0.2s ease;
+  --transition-medium: all 0.3s ease;
+}

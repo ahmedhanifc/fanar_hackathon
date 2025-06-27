@@ -256,3 +256,160 @@ function formatMessage(message) {
 
     return formatted;
 }
+
+// Add this to your chat.js file
+document.addEventListener('DOMContentLoaded', function() {
+    // Existing code...
+    
+    const imageInput = document.getElementById('imageInput');
+    let selectedImage = null;
+    
+    // Handle image upload
+    imageInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            selectedImage = this.files[0];
+            // Optional: Show preview of selected image
+            addImagePreview(selectedImage);
+        }
+    });
+    
+    // Modify your form submission to include the image
+    document.getElementById('chat-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const message = messageInput.value.trim();
+        
+        if (message || selectedImage) {
+            // Add user message to chat
+            addMessage(message, 'user');
+            
+            // Clear input
+            messageInput.value = '';
+            messageInput.style.height = '44px';
+            
+            // Create FormData to send both text and image
+            const formData = new FormData();
+            formData.append('message', message);
+            if (selectedImage) {
+                formData.append('image', selectedImage);
+                // Clear the selected image
+                imageInput.value = '';
+                selectedImage = null;
+                // Remove preview if you added one
+                removeImagePreview();
+            }
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Send to server
+            fetch('/api/chat', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide typing indicator
+                hideTypingIndicator();
+                // Add bot response
+                addMessage(data.response, 'bot');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                hideTypingIndicator();
+            });
+        }
+    });
+});
+
+// Add this to your chat.js file
+document.addEventListener('DOMContentLoaded', function() {
+    // Existing code...
+    
+    // Voice recognition
+    const voiceButton = document.getElementById('voice-button');
+    let recognition = null;
+    let isRecording = false;
+    
+    // Check if browser supports speech recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US'; // Set language
+        
+        recognition.onstart = function() {
+            isRecording = true;
+            voiceButton.classList.add('recording');
+        };
+        
+        recognition.onresult = function(event) {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            // Update message input with transcript
+            messageInput.value = finalTranscript || interimTranscript;
+        };
+        
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error', event.error);
+            stopRecording();
+        };
+        
+        recognition.onend = function() {
+            stopRecording();
+        };
+        
+        voiceButton.addEventListener('click', function() {
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                messageInput.value = '';
+                recognition.start();
+            }
+        });
+        
+        function stopRecording() {
+            isRecording = false;
+            voiceButton.classList.remove('recording');
+        }
+    } else {
+        voiceButton.style.display = 'none';
+        console.log("Speech recognition not supported");
+    }
+    
+    // Additional text-to-speech functionality for bot messages
+    function speakText(text) {
+        if ('speechSynthesis' in window) {
+            const speech = new SpeechSynthesisUtterance();
+            speech.text = text;
+            speech.volume = 1;
+            speech.rate = 1;
+            speech.pitch = 1;
+            window.speechSynthesis.speak(speech);
+        }
+    }
+    
+    // Optional: Add a speak button to bot messages
+    function addSpeakButton(messageElement, text) {
+        if ('speechSynthesis' in window) {
+            const speakBtn = document.createElement('button');
+            speakBtn.className = 'speak-button';
+            speakBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            speakBtn.title = 'Listen to this response';
+            speakBtn.onclick = function() {
+                speakText(text);
+            };
+            messageElement.appendChild(speakBtn);
+        }
+    }
+});

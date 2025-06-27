@@ -46,6 +46,7 @@ ${caseInfo}
 Reference these relevant Qatari legal texts in your analysis:
 ${qatarLegalTexts}
 
+
 Please provide:
 
 1. **Legal Assessment**: Analyze what happened from a legal perspective

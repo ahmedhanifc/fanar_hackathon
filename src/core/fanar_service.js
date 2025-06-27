@@ -1,4 +1,5 @@
 const { OpenAI } = require("openai");
+const { getSystemPrompt } = require("./system_prompts");
 
 // Validate API key on startup
 if (!process.env.FANAR_API_KEY) {
@@ -105,5 +106,85 @@ async function getFanarChatCompletion(messagesArray, retryCount = 0) {
     }
 }
 
+async function processFanarImageApi(base64Image, promptKey = 'IMAGE_ANALYSIS',retryCount = 0) {
+    try {
+        console.log('Sending image to Fanar API...');
+
+        const systemContent = getSystemPrompt(promptKey);
+        
+        // Using the vision capability if available
+        const response = await client.chat.completions.create({
+            model: "Fanar-Oryx-IVU-1",
+            messages: [
+                {
+                    role: "system",
+                    content: systemContent
+                },
+                {
+                    role: "user",
+                    content: [
+                        { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } },
+                        { type: "text", text: "Analyze this image for potential phishing attempts, scams, or legal issues." }
+                    ]
+                }
+            ],
+            max_tokens: 500,
+        });
+        
+        console.log('Received image analysis from Fanar API.');
+        
+        if (!response || !response.choices || !response.choices[0] || !response.choices[0].message) {
+            throw new Error('Invalid response structure from Fanar API');
+        }
+        
+        return response.choices[0].message.content;
+        
+    } catch (error) {
+        console.error("Error calling Fanar Image API:", error);
+        
+        // Handle retry logic similar to the chat completion function
+        if (error.status >= 500 && retryCount < MAX_RETRIES) {
+            console.log(`Retrying image request (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+            await delay(RETRY_DELAY * (retryCount + 1));
+            return processFanarImageApi(base64Image, retryCount + 1);
+        }
+        
+        throw new Error(`Failed to analyze image: ${error.message}`);
+    }
+}
+
+// Add new function for image generation
+async function generateFanarImage(prompt, retryCount = 0) {
+    try {
+        console.log('Generating image with Fanar API...');
+        
+        const response = await client.images.generate({
+            model: "Fanar-ImageGen-1",
+            prompt: prompt,
+        });
+        
+        console.log('Received generated image from Fanar API.');
+        
+        if (!response || !response.data || !response.data[0] || !response.data[0].b64_json) {
+            throw new Error('Invalid response structure from Fanar API');
+        }
+        
+        return response.data[0].b64_json;
+        
+    } catch (error) {
+        console.error("Error calling Fanar Image Generation API:", error);
+        
+        // Handle retry logic
+        if (error.status >= 500 && retryCount < MAX_RETRIES) {
+            console.log(`Retrying image generation request (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+            await delay(RETRY_DELAY * (retryCount + 1));
+            return generateFanarImage(prompt, retryCount + 1);
+        }
+        
+        throw new Error(`Failed to generate image: ${error.message}`);
+    }
+}
+
+
 // Export the function so it can be used in other parts of your app
-module.exports = { getFanarChatCompletion };
+module.exports = { getFanarChatCompletion, processFanarImageApi,generateFanarImage };

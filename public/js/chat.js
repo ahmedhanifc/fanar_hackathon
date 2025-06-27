@@ -3,26 +3,47 @@ const streamingService = new StreamingChatService();
 
 // Modified sendMessage function to support streaming
 async function sendMessage() {
-    console.log("Sending Message...")
+    console.log("Sending Message...");
     const messageInput = document.getElementById('messageInput');
     const message = messageInput.value.trim();
+    const imageInput = document.getElementById('imageInput');
+    const hasImage = imageInput.files && imageInput.files[0];
     
-    if (!message) return;
+    if (!message && !hasImage) return;
     
     // Clear input
     messageInput.value = '';
     
-    // Add user message to chat
-    addMessageToChat(message, 'user');
+    // Add user message to chat if there is text
+    if (message) {
+        addMessageToChat(message, 'user');
+    }
+    
+    // Handle the image if present
+    let imageData = null;
+    if (hasImage) {
+        const imageFile = imageInput.files[0];
+        
+        // Add the image to the chat
+        const imageUrl = URL.createObjectURL(imageFile);
+        addImageToChat(imageUrl, 'user');
+        
+        // Remove the preview
+        removeImagePreview();
+        
+        imageData = await compressImage(imageFile);
+        console.log(`Compressed image size: ~${Math.round(imageData.length/1024)}KB`);
+
+        if (imageData.length > 1024 * 1024 * 9) { // 9MB max after compression
+                throw new Error("Image too large even after compression");
+        }
+    }
     
     try {
-        // Show typing indicator
-        // showTypingIndicator();
-        
         // Create empty bot message for streaming
         const botMessageElement = addStreamingMessageToChat();
         
-        // Use streaming service
+        // Use streaming service with image support
         await streamingService.sendStreamingMessage(
             message,
             // onToken - called for each word/token
@@ -37,7 +58,6 @@ async function sendMessage() {
                     console.log('Streaming complete', metadata);
                 } catch (finalizeError) {
                     console.error('Error finalizing message:', finalizeError);
-                    // Fallback: just remove streaming class and cursor if finalization fails
                     if (botMessageElement) {
                         botMessageElement.classList.remove('streaming');
                         const cursor = botMessageElement.querySelector('.streaming-cursor');
@@ -49,13 +69,17 @@ async function sendMessage() {
             (error) => {
                 console.error('Streaming error:', error);
                 hideTypingIndicator();
-                // Check if botMessageElement exists before removing
                 if (botMessageElement && botMessageElement.parentNode) {
                     botMessageElement.remove();
                 }
                 addMessageToChat('Sorry, I\'m having trouble connecting right now. Please try again.', 'bot');
-            }
+            },
+            // New parameter for image data
+            imageData
         );
+        
+        // Clear the file input
+        imageInput.value = '';
         
     } catch (error) {
         console.error('Error sending message:', error);
@@ -64,6 +88,185 @@ async function sendMessage() {
     }
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    const messageInput = document.getElementById('messageInput');
+    const chatForm = document.getElementById('chat-form');
+    const imageInput = document.getElementById('imageInput');
+    const voiceButton = document.getElementById('voice-button');
+    let selectedImage = null;
+    let isRecording = false;
+    let recognition = null;
+    
+    // 1. Handle form submission (main chat functionality)
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+    
+    // 2. Handle Enter key press (no shift for newlines)
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
+    // 3. Auto-resize textarea as user types
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+        
+        // Reset to minimum height if empty
+        if (!this.value.trim()) {
+            this.style.height = '44px';
+        }
+    });
+    
+    // 4. Handle image upload
+    imageInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            selectedImage = this.files[0];
+            addImagePreview(selectedImage);
+        }
+    });
+    
+    // 5. Voice recognition setup
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US'; // Set language
+        
+        recognition.onstart = function() {
+            isRecording = true;
+            voiceButton.classList.add('recording');
+        };
+        
+        recognition.onresult = function(event) {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            // Update message input with transcript
+            messageInput.value = finalTranscript || interimTranscript;
+        };
+        
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error', event.error);
+            stopRecording();
+        };
+        
+        recognition.onend = function() {
+            stopRecording();
+        };
+        
+        voiceButton.addEventListener('click', function() {
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                messageInput.value = '';
+                recognition.start();
+            }
+        });
+        
+        function stopRecording() {
+            isRecording = false;
+            voiceButton.classList.remove('recording');
+        }
+    } else {
+        voiceButton.style.display = 'none';
+        console.log("Speech recognition not supported");
+    }
+    
+    // 6. Text-to-speech functionality for bot messages
+    function speakText(text) {
+        if ('speechSynthesis' in window) {
+            const speech = new SpeechSynthesisUtterance();
+            speech.text = text;
+            speech.volume = 1;
+            speech.rate = 1;
+            speech.pitch = 1;
+            window.speechSynthesis.speak(speech);
+        }
+    }
+    
+    // Optional helper: Add a speak button to messages
+    function addSpeakButton(messageElement, text) {
+        if ('speechSynthesis' in window) {
+            const speakBtn = document.createElement('button');
+            speakBtn.className = 'speak-button';
+            speakBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            speakBtn.title = 'Listen to this response';
+            speakBtn.onclick = function() {
+                speakText(text);
+            };
+            messageElement.appendChild(speakBtn);
+        }
+    }
+});
+
+async function compressImage(file, maxSizeMB = 1) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        
+        reader.onload = function(e) {
+            const img = new Image();
+            img.src = e.target.result;
+            
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // Calculate scaling factor to get desired file size
+                // Start with 0.7 quality which works well in most cases
+                let scaleFactor = 1;
+                if (Math.max(width, height) > 1600) {
+                    scaleFactor = 1600 / Math.max(width, height);
+                }
+                
+                canvas.width = width * scaleFactor;
+                canvas.height = height * scaleFactor;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Start with a reasonable quality setting
+                let quality = 0.7;
+                
+                // Get the compressed data URL
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressedDataUrl);
+            };
+            
+            img.onerror = function() {
+                reject(new Error('Failed to load image'));
+            };
+        };
+        
+        reader.onerror = function() {
+            reject(new Error('Failed to read file'));
+        };
+    });
+}
+// Helper function to convert file to base64
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
 
 // Function to add messages to chat (existing - keep as is)
 function addMessageToChat(message, sender) {
@@ -182,22 +385,6 @@ function hideTypingIndicator() {
     }
 }
 
-// Event listeners (existing - keep as is)
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle form submission
-    document.getElementById('chat-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        sendMessage();
-    });
-    
-    // Handle Enter key press
-    document.getElementById('messageInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
-});
 
 // formatMessage function (existing - keep as is)
 function formatMessage(message) {
@@ -257,159 +444,62 @@ function formatMessage(message) {
     return formatted;
 }
 
-// Add this to your chat.js file
-document.addEventListener('DOMContentLoaded', function() {
-    // Existing code...
+// Function to add image preview to chat
+function addImagePreview(imageFile) {
+    const chatMessages = document.getElementById('chat-messages');
+    const previewDiv = document.createElement('div');
+    previewDiv.className = 'image-preview-container';
+    previewDiv.id = 'image-preview';
     
-    const imageInput = document.getElementById('imageInput');
-    let selectedImage = null;
+    // Create a read URL for the image
+    const imageUrl = URL.createObjectURL(imageFile);
     
-    // Handle image upload
-    imageInput.addEventListener('change', function(e) {
-        if (this.files && this.files[0]) {
-            selectedImage = this.files[0];
-            // Optional: Show preview of selected image
-            addImagePreview(selectedImage);
-        }
+    previewDiv.innerHTML = `
+        <div class="image-preview">
+            <img src="${imageUrl}" alt="Preview" class="preview-image">
+            <div class="preview-info">
+                <span>${imageFile.name}</span>
+                <button type="button" class="remove-preview">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(previewDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Add listener to remove button
+    const removeButton = previewDiv.querySelector('.remove-preview');
+    removeButton.addEventListener('click', function() {
+        removeImagePreview();
+        // Clear the file input
+        const imageInput = document.getElementById('imageInput');
+        imageInput.value = '';
+        selectedImage = null;
     });
-    
-    // Modify your form submission to include the image
-    document.getElementById('chat-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const message = messageInput.value.trim();
-        
-        if (message || selectedImage) {
-            // Add user message to chat
-            addMessage(message, 'user');
-            
-            // Clear input
-            messageInput.value = '';
-            messageInput.style.height = '44px';
-            
-            // Create FormData to send both text and image
-            const formData = new FormData();
-            formData.append('message', message);
-            if (selectedImage) {
-                formData.append('image', selectedImage);
-                // Clear the selected image
-                imageInput.value = '';
-                selectedImage = null;
-                // Remove preview if you added one
-                removeImagePreview();
-            }
-            
-            // Show typing indicator
-            showTypingIndicator();
-            
-            // Send to server
-            fetch('/api/chat', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Hide typing indicator
-                hideTypingIndicator();
-                // Add bot response
-                addMessage(data.response, 'bot');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                hideTypingIndicator();
-            });
-        }
-    });
-});
+}
 
-// Add this to your chat.js file
-document.addEventListener('DOMContentLoaded', function() {
-    // Existing code...
-    
-    // Voice recognition
-    const voiceButton = document.getElementById('voice-button');
-    let recognition = null;
-    let isRecording = false;
-    
-    // Check if browser supports speech recognition
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US'; // Set language
-        
-        recognition.onstart = function() {
-            isRecording = true;
-            voiceButton.classList.add('recording');
-        };
-        
-        recognition.onresult = function(event) {
-            let interimTranscript = '';
-            let finalTranscript = '';
-            
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcript;
-                } else {
-                    interimTranscript += transcript;
-                }
-            }
-            
-            // Update message input with transcript
-            messageInput.value = finalTranscript || interimTranscript;
-        };
-        
-        recognition.onerror = function(event) {
-            console.error('Speech recognition error', event.error);
-            stopRecording();
-        };
-        
-        recognition.onend = function() {
-            stopRecording();
-        };
-        
-        voiceButton.addEventListener('click', function() {
-            if (isRecording) {
-                recognition.stop();
-            } else {
-                messageInput.value = '';
-                recognition.start();
-            }
-        });
-        
-        function stopRecording() {
-            isRecording = false;
-            voiceButton.classList.remove('recording');
-        }
-    } else {
-        voiceButton.style.display = 'none';
-        console.log("Speech recognition not supported");
+// Function to remove image preview
+function removeImagePreview() {
+    const previewDiv = document.getElementById('image-preview');
+    if (previewDiv) {
+        previewDiv.remove();
     }
+}
+
+// Function to add image to chat
+function addImageToChat(imageUrl, sender) {
+    const chatMessages = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}`;
     
-    // Additional text-to-speech functionality for bot messages
-    function speakText(text) {
-        if ('speechSynthesis' in window) {
-            const speech = new SpeechSynthesisUtterance();
-            speech.text = text;
-            speech.volume = 1;
-            speech.rate = 1;
-            speech.pitch = 1;
-            window.speechSynthesis.speak(speech);
-        }
-    }
+    messageDiv.innerHTML = `
+        <div class="message-content">
+            <img src="${imageUrl}" alt="Uploaded image" class="message-image">
+        </div>
+    `;
     
-    // Optional: Add a speak button to bot messages
-    function addSpeakButton(messageElement, text) {
-        if ('speechSynthesis' in window) {
-            const speakBtn = document.createElement('button');
-            speakBtn.className = 'speak-button';
-            speakBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-            speakBtn.title = 'Listen to this response';
-            speakBtn.onclick = function() {
-                speakText(text);
-            };
-            messageElement.appendChild(speakBtn);
-        }
-    }
-});
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}

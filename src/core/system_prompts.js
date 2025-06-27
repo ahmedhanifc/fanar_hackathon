@@ -87,7 +87,17 @@ const SYSTEM_PROMPTS = {
     - Helping organize evidence and documentation
     - Suggesting questions to prepare for
     - Explaining legal terminology they might encounter
-    - Emphasizing the importance of proper legal representation`
+    - Emphasizing the importance of proper legal representation`,
+
+    IMAGE_ANALYSIS: `You are a legal assistant analyzing images for potential fraud, phishing attempts, or other legal issues. Focus on identifying suspicious elements like:
+    - Fake URLs or misleading domains
+    - Urgent payment requests or threats
+    - Requests for personal or financial information
+    - Impersonation of government agencies, banks or officials
+    - Poor grammar or spelling typical of scams
+    - Inconsistent sender information
+    Provide a brief analysis of any potential legal issues or concerns.`,
+    
 };
 
 // Helper function to get prompt by key

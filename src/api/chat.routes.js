@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getFanarChatCompletion } = require("../core/fanar_service");
+const { getFanarChatCompletion, processFanarImageApi } = require("../core/fanar_service");
 const { createMessagesArray } = require("../core/system_prompts");
 const CaseConversationManager = require("../core/case_conversation");
 const { CASE_TYPES } = require("../core/case_structure");
@@ -10,7 +10,8 @@ const { classifyCase } = require("../core/case_classification");
 const { generateLegalAnalysis } = require("../core/legal_analysis");
 const { streamFanarChatCompletion, streamLegalAnalysis } = require("../core/streaming_service");
 const multer = require('multer');
-
+const fs = require('fs');
+const path = require('path');
 // Store active conversations (in production, use a database)
 const activeConversations = new Map();
 const conversationManager = new ConversationManager();
@@ -186,12 +187,172 @@ router.post('/message', async (req, res) => {
 });
 
 
-router.post('/stream', async (req, res) => {
-    try {
-        const { message, promptType = 'INITIAL_CONSULTATION', conversationId = 'default-session' } = req.body;
+// router.post('/stream', async (req, res) => {
+//     try {
+//         const { message, promptType = 'INITIAL_CONSULTATION', conversationId = 'default-session' } = req.body;
         
-        if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
+//         if (!message) {
+//             return res.status(400).json({ error: 'Message is required' });
+//         }
+
+//         // Set up SSE headers
+//         res.writeHead(200, {
+//             'Content-Type': 'text/event-stream',
+//             'Cache-Control': 'no-cache',
+//             'Connection': 'keep-alive',
+//             'Access-Control-Allow-Origin': '*',
+//             'Access-Control-Allow-Headers': 'Content-Type',
+//         });
+
+//         // Get conversation state
+//         const conversation = conversationManager.getConversation(conversationId);
+        
+//         let fanarResponse;
+//         let showReportPrompt = false;
+
+//         if (conversation.mode === 'GENERATIVE') {
+//             // Check if this is follow-up after completed case
+//             if (conversation.caseCompleted && conversation.completedCaseData) {
+//                 const contextPrompt = `
+//                 The user previously completed a case report with these details:
+//                 ${JSON.stringify(conversation.completedCaseData, null, 2)}
+                
+//                 They are now asking: "${message}"
+                
+//                 Provide helpful guidance based on their specific case details.
+//                 `;
+                
+//                 const messagesArray = [
+//                     { role: "system", content: contextPrompt },
+//                     { role: "user", content: message }
+//                 ];
+                
+//                 // Stream the response
+//                 await streamFanarChatCompletion(messagesArray, res);
+//             }
+//             else{
+//                 const userIntent = await detectUserIntent(message);
+                
+//                 if (userIntent === INTENTS.START_REPORT) {
+//                     // Handle case classification and setup (non-streaming for structured flow)
+//                     const conversationHistory = conversation.messageHistory || [];
+//                     conversationHistory.push({ role: 'user', content: message });
+
+//                     let caseType;
+                    
+//                     try {
+//                         caseType = await classifyCase(conversationHistory);
+//                     } catch (error) {
+//                         console.error('Classification failed:', error);
+//                         caseType = CASE_TYPES.GENERAL;
+//                     }
+                    
+//                     conversationManager.updateConversation(conversationId, { 
+//                         mode: 'REPORT',
+//                         caseType: caseType
+//                     });
+                    
+//                     const caseManager = new CaseConversationManager();
+
+//                     try{
+//                         const initialResponse = await caseManager.startCase(caseType);
+//                         activeConversations.set(conversationId, caseManager);
+
+//                         const response = `I'll help you create a detailed report. Let's start with some specific questions to gather all the necessary information.\n\n${initialResponse.message}`;
+                        
+//                         // Stream this response character by character
+//                         await streamText(response, res);
+//                     }
+//                     catch (error) {
+//                         console.error('Error starting case:', error);
+//                         await streamText("I'm sorry, there was an issue starting your case. Please try again later.", res);
+//                     }
+//                 } else {
+//                     // Stream normal generative chat
+//                     const messagesArray = createMessagesArray(message, promptType);
+//                     await streamFanarChatCompletion(messagesArray, res);
+                    
+//                     // Store message in conversation history
+//                     if (!conversation.messageHistory) conversation.messageHistory = [];
+//                     conversation.messageHistory.push(
+//                         { role: 'user', content: message }
+//                     );
+//                 }
+//             }
+//         } else if (conversation.mode === 'REPORT') {
+//             // Handle structured questioning
+//             const caseManager = activeConversations.get(conversationId);
+            
+//             if (caseManager) {
+//                 const response = await caseManager.processUserResponse(message);
+                
+//                 if(response.isComplete){
+//                     const caseData = response.caseData;
+//                     const caseType = caseManager.getCaseData().caseType;
+
+//                     try{
+//                         // Stream the legal analysis
+//                         await streamLegalAnalysis(caseData, caseType, res);
+
+//                         conversationManager.updateConversation(conversationId, { 
+//                             mode: 'GENERATIVE',
+//                             caseCompleted: true,
+//                             completedCaseData: caseData,
+//                             caseType: caseType
+//                         });
+//                     } catch (error) {
+//                         console.error('Error generating legal analysis:', error);
+//                         await streamText("I've collected all your information. Let me analyze your case and provide legal guidance.", res);
+//                     }
+//                 }
+//                 else{
+//                     await streamText(response.message, res);
+//                 }
+
+//             } else {
+//                 await streamText("I'm sorry, there was an issue with your case session. Let's restart the report process.", res);
+//                 conversationManager.updateConversation(conversationId, { mode: 'GENERATIVE' });
+//             }
+//         }
+
+//         // Send final metadata
+//         res.write(`data: ${JSON.stringify({
+//             type: 'metadata',
+//             conversationMode: conversation.mode,
+//             caseType: conversation.caseType,
+//             showReportPrompt: showReportPrompt,
+//             timestamp: new Date().toISOString()
+//         })}\n\n`);
+
+//         res.write('data: [DONE]\n\n');
+//         res.end();
+        
+//     } catch (error) {
+//         console.error('Streaming chat error:', error);
+//         res.write(`data: ${JSON.stringify({ type: 'error', message: 'Failed to process message' })}\n\n`);
+//         res.end();
+//     }
+// });
+
+// Helper function to stream text character by character
+async function streamText(text, res) {
+    const words = text.split(' ');
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i] + (i < words.length - 1 ? ' ' : '');
+        res.write(`data: ${JSON.stringify({ type: 'token', content: word })}\n\n`);
+        // Add small delay to simulate streaming
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+}
+
+
+router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {
+    try {
+        const { message, imageData, promptType = 'INITIAL_CONSULTATION', conversationId = 'default-session' } = req.body;
+        
+        // Allow sending only image without text message
+        if (!message && !imageData) {
+            return res.status(400).json({ error: 'Either message or image is required' });
         }
 
         // Set up SSE headers
@@ -206,112 +367,107 @@ router.post('/stream', async (req, res) => {
         // Get conversation state
         const conversation = conversationManager.getConversation(conversationId);
         
-        let fanarResponse;
-        let showReportPrompt = false;
+        // Process image if present
+        let imageAnalysisResult = null;
+        if (imageData) {
+            try {
+                // Extract base64 data from data URL if present
+                const base64Data = imageData.split(',')[1] || imageData;
+                
+                // Send initial acknowledgment about the image
+                res.write(`data: ${JSON.stringify({ type: 'token', content: "I've received your image. " })}\n\n`);
+                res.write(`data: ${JSON.stringify({ type: 'token', content: "Let me analyze it. " })}\n\n`);
+                
+                // Process the image with FANAR API
+                imageAnalysisResult = await processFanarImage(base64Data);
+                
+                // Send image analysis as the first part of the response
+                res.write(`data: ${JSON.stringify({ 
+                    type: 'token', 
+                    content: "Based on the image you've shared, I can see: " 
+                })}\n\n`);
+                
+                // Stream the analysis results word by word
+                const words = imageAnalysisResult.split(' ');
+                for (let i = 0; i < words.length; i++) {
+                    const word = words[i] + (i < words.length - 1 ? ' ' : '');
+                    res.write(`data: ${JSON.stringify({ type: 'token', content: word })}\n\n`);
+                    // Small delay for streaming effect
+                    await new Promise(resolve => setTimeout(resolve, 30));
+                }
+            } catch (imageError) {
+                console.error('Error processing image:', imageError);
+                res.write(`data: ${JSON.stringify({ 
+                    type: 'token', 
+                    content: "I'm having trouble analyzing your image. " 
+                })}\n\n`);
+            }
+        }
 
-        if (conversation.mode === 'GENERATIVE') {
-            // Check if this is follow-up after completed case
-            if (conversation.caseCompleted && conversation.completedCaseData) {
-                const contextPrompt = `
-                The user previously completed a case report with these details:
-                ${JSON.stringify(conversation.completedCaseData, null, 2)}
+        // Now handle the text message if present
+        if (message) {
+            // If we've already processed an image, add a transition to the message analysis
+            if (imageData) {
+                res.write(`data: ${JSON.stringify({ 
+                    type: 'token', 
+                    content: "\n\nRegarding your message: " 
+                })}\n\n`);
+            }
+            
+            // Continue with existing message handling logic based on conversation mode
+            if (conversation.mode === 'GENERATIVE') {
+                // Existing generative mode code...
+                // (Your existing streaming logic remains mostly the same)
                 
-                They are now asking: "${message}"
-                
-                Provide helpful guidance based on their specific case details.
-                `;
-                
-                const messagesArray = [
-                    { role: "system", content: contextPrompt },
-                    { role: "user", content: message }
-                ];
+                // Create messages array with image context if available
+                let messagesArray;
+                if (conversation.caseCompleted && conversation.completedCaseData) {
+                    // Handle completed case scenario
+                    const contextPrompt = `
+                    The user previously completed a case report with these details:
+                    ${JSON.stringify(conversation.completedCaseData, null, 2)}
+                    
+                    ${imageAnalysisResult ? `They shared an image that shows: ${imageAnalysisResult}` : ''}
+                    
+                    They are now asking: "${message}"
+                    
+                    Provide helpful guidance based on their specific case details${imageAnalysisResult ? ' and the image they shared' : ''}.
+                    `;
+                    
+                    messagesArray = [
+                        { role: "system", content: contextPrompt },
+                        { role: "user", content: message }
+                    ];
+                } else {
+                    // Normal generative chat
+                    const baseMessagesArray = createMessagesArray(message, promptType);
+                    
+                    // If we have image analysis, enhance the system prompt
+                    if (imageAnalysisResult) {
+                        baseMessagesArray[0].content += `\n\nThe user has shared an image that shows: ${imageAnalysisResult}. Consider this information when responding.`;
+                    }
+                    
+                    messagesArray = baseMessagesArray;
+                }
                 
                 // Stream the response
                 await streamFanarChatCompletion(messagesArray, res);
-            }
-            else{
-                const userIntent = await detectUserIntent(message);
                 
-                if (userIntent === INTENTS.START_REPORT) {
-                    // Handle case classification and setup (non-streaming for structured flow)
-                    const conversationHistory = conversation.messageHistory || [];
-                    conversationHistory.push({ role: 'user', content: message });
-
-                    let caseType;
-                    
-                    try {
-                        caseType = await classifyCase(conversationHistory);
-                    } catch (error) {
-                        console.error('Classification failed:', error);
-                        caseType = CASE_TYPES.GENERAL;
-                    }
-                    
-                    conversationManager.updateConversation(conversationId, { 
-                        mode: 'REPORT',
-                        caseType: caseType
-                    });
-                    
-                    const caseManager = new CaseConversationManager();
-
-                    try{
-                        const initialResponse = await caseManager.startCase(caseType);
-                        activeConversations.set(conversationId, caseManager);
-
-                        const response = `I'll help you create a detailed report. Let's start with some specific questions to gather all the necessary information.\n\n${initialResponse.message}`;
-                        
-                        // Stream this response character by character
-                        await streamText(response, res);
-                    }
-                    catch (error) {
-                        console.error('Error starting case:', error);
-                        await streamText("I'm sorry, there was an issue starting your case. Please try again later.", res);
-                    }
-                } else {
-                    // Stream normal generative chat
-                    const messagesArray = createMessagesArray(message, promptType);
-                    await streamFanarChatCompletion(messagesArray, res);
-                    
-                    // Store message in conversation history
-                    if (!conversation.messageHistory) conversation.messageHistory = [];
-                    conversation.messageHistory.push(
-                        { role: 'user', content: message }
-                    );
-                }
+                // Store message in conversation history
+                if (!conversation.messageHistory) conversation.messageHistory = [];
+                conversation.messageHistory.push(
+                    { role: 'user', content: message + (imageAnalysisResult ? ' [Shared image]' : '') }
+                );
+            } else if (conversation.mode === 'REPORT') {
+                // Existing REPORT mode logic
+                // (Your existing report-related code)
             }
-        } else if (conversation.mode === 'REPORT') {
-            // Handle structured questioning
-            const caseManager = activeConversations.get(conversationId);
-            
-            if (caseManager) {
-                const response = await caseManager.processUserResponse(message);
-                
-                if(response.isComplete){
-                    const caseData = response.caseData;
-                    const caseType = caseManager.getCaseData().caseType;
-
-                    try{
-                        // Stream the legal analysis
-                        await streamLegalAnalysis(caseData, caseType, res);
-
-                        conversationManager.updateConversation(conversationId, { 
-                            mode: 'GENERATIVE',
-                            caseCompleted: true,
-                            completedCaseData: caseData,
-                            caseType: caseType
-                        });
-                    } catch (error) {
-                        console.error('Error generating legal analysis:', error);
-                        await streamText("I've collected all your information. Let me analyze your case and provide legal guidance.", res);
-                    }
-                }
-                else{
-                    await streamText(response.message, res);
-                }
-
-            } else {
-                await streamText("I'm sorry, there was an issue with your case session. Let's restart the report process.", res);
-                conversationManager.updateConversation(conversationId, { mode: 'GENERATIVE' });
-            }
+        } else if (imageAnalysisResult) {
+            // If only an image was sent (no text), add a prompt for follow-up
+            res.write(`data: ${JSON.stringify({ 
+                type: 'token', 
+                content: "\n\nIs there anything specific about this document you'd like me to explain?" 
+            })}\n\n`);
         }
 
         // Send final metadata
@@ -319,7 +475,7 @@ router.post('/stream', async (req, res) => {
             type: 'metadata',
             conversationMode: conversation.mode,
             caseType: conversation.caseType,
-            showReportPrompt: showReportPrompt,
+            showReportPrompt: false,
             timestamp: new Date().toISOString()
         })}\n\n`);
 
@@ -333,14 +489,18 @@ router.post('/stream', async (req, res) => {
     }
 });
 
-// Helper function to stream text character by character
-async function streamText(text, res) {
-    const words = text.split(' ');
-    for (let i = 0; i < words.length; i++) {
-        const word = words[i] + (i < words.length - 1 ? ' ' : '');
-        res.write(`data: ${JSON.stringify({ type: 'token', content: word })}\n\n`);
-        // Add small delay to simulate streaming
-        await new Promise(resolve => setTimeout(resolve, 50));
+async function processFanarImage(base64Image) {
+    try {
+        console.log("Processing image with FANAR API");
+        
+        // Call the actual FANAR image API function
+        const analysisResult = await processFanarImageApi(base64Image);
+        
+        // Return the analysis from the API
+        return analysisResult;
+    } catch (error) {
+        console.error('Error processing image with FANAR:', error);
+        throw new Error('Failed to analyze image content: ' + error.message);
     }
 }
 

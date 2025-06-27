@@ -323,3 +323,67 @@ h1,
     padding: var(--space-sm);
   }
 }
+
+
+/* Add these styles for image handling */
+
+.message-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: var(--radius-md);
+    margin-top: var(--space-xs);
+    transition: var(--transition-medium);
+    cursor: pointer;
+}
+
+.message-image:hover {
+    transform: scale(1.02);
+}
+
+.image-preview-container {
+    padding: var(--space-xs);
+    margin: var(--space-sm) 0;
+    background-color: var(--bg-medium);
+    border-radius: var(--radius-md);
+    align-self: center;
+    max-width: 300px;
+}
+
+.image-preview {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: var(--radius-sm);
+}
+
+.preview-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-xs);
+    font-size: var(--font-size-sm);
+    color: var(--text-medium);
+}
+
+.remove-preview {
+    background: none;
+    border: none;
+    color: var(--error);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-circle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-fast);
+}
+
+.remove-preview:hover {
+    background-color: rgba(255, 75, 75, 0.1);
+    transform: scale(1.1);
+}

@@ -39,23 +39,12 @@ router.post('/message', async (req, res) => {
                 // Continue with normal generative chat
                 const messagesArray = createMessagesArray(message, promptType);
                 fanarResponse = await getFanarChatCompletion(messagesArray);
-                
-                // Check if we should show report prompt
-                conversation.messageCount++;
-                if (conversationManager.shouldShowReportPrompt(conversation)) {
-                    showReportPrompt = true;
-                }
             }
         } else if (conversation.mode === 'REPORT') {
             // Handle report mode (placeholder for now)
             fanarResponse = "Thank you for that information. Report mode is under development. For now, I can continue helping you in chat mode.";
             // Reset to generative mode for now
             conversationManager.updateConversation(conversationId, { mode: 'GENERATIVE' });
-        }
-
-        // Add report prompt if needed
-        if (showReportPrompt) {
-            fanarResponse += "\n\n---\n📋 Would you like to start a detailed case report? This will help me provide more specific guidance for your situation.";
         }
 
         res.json({

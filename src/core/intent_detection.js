@@ -122,7 +122,7 @@ async function detectPostAnalysisIntent(userMessage) {
 
 module.exports = {
     detectUserIntent,
-    INTENT,
+    INTENTS,
     detectPostAnalysisIntent,
     POST_ANALYSIS_INTENTS,
 };

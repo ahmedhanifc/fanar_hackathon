@@ -13,6 +13,19 @@ async function generateComplaintPDF(caseData, caseType) {
     let browser;
     
     try {
+        console.log("Generating PDF with case data:", JSON.stringify(caseData, null, 2));
+        
+        // Check if case data is valid
+        if (!caseData) {
+            throw new Error("No case data provided");
+        }
+        
+        // Ensure responses object exists
+        if (!caseData.responses) {
+            console.log("No responses found in case data, creating empty responses");
+            caseData.responses = {}; // Create empty responses to avoid undefined errors
+        }
+        
         // Generate the complaint content based on case type
         let complaintContent;
         
@@ -118,7 +131,7 @@ async function generateComplaintPDF(caseData, caseType) {
 }
 
 function generatePhishingComplaint(caseData) {
-    const responses = caseData.responses;
+    const responses = caseData.responses || {};
     const currentDate = new Date().toLocaleDateString('en-GB');
     
     return `
@@ -176,7 +189,7 @@ I declare that the information provided in this complaint is true and accurate t
 }
 
 function generateGeneralComplaint(caseData) {
-    const responses = caseData.responses;
+    const responses = caseData.responses || {};
     const currentDate = new Date().toLocaleDateString('en-GB');
     
     return `

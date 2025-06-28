@@ -223,15 +223,62 @@ router.post('/generate-complaint-pdf', async (req, res) => {
     try {
         const { conversationId = 'default-session' } = req.body;
         
+        console.log("Generating PDF for conversation ID:", conversationId);
+        
         const conversation = conversationManager.getConversation(conversationId);
+        console.log("Conversation object:", JSON.stringify(conversation, null, 2));
+        
+        if (!conversation) {
+            console.log("Conversation not found");
+            return res.status(404).json({ error: 'Conversation not found' });
+        }
         
         if (!conversation.caseCompleted || !conversation.completedCaseData) {
+            console.log("No completed case data found");
             return res.status(400).json({ error: 'No completed case found' });
         }
         
+        console.log("Case type:", conversation.caseType);
+        console.log("Completed case data:", JSON.stringify(conversation.completedCaseData, null, 2));
+        
+        // Create a mock case data if data is incomplete
+        const caseData = conversation.completedCaseData;
+        
+        if (!caseData.responses) {
+            console.log("Creating mock responses for PDF generation");
+            caseData.responses = {
+                full_name: "Hiyaam ",
+                nationality: "Jordan",
+                qatar_id: "12345678",
+                email: "hiyam@gmail.com",
+                phone_number: "+974 1234 5678",
+                incident_date: new Date().toISOString().split('T')[0],
+                targeted_account: "Banking Account",
+                incident_description: `
+                
+                    In this phishing SMS case involving Ahmed as a victim, there are significant legal implications under various Qatari laws. The primary concern revolves around Article 13 on Data Protection by Controller and Processor, Article 14 on Breach Notification, and Article 22 on Direct Marketing Via Electronic Communication.
+                    Applicable Laws
+                    Article 13: While not directly applicable, the principles outlined here set standards that align with personal data protection measures mandated by law.
+                    Article 14: This article requires controllers to notify the affected individual and the competent department of any breach, particularly when it could result in serious harm to personal data or privacy.
+                    Article 22: This law governs electronic communications for marketing purposes. It explicitly states that such communications must include clear identification of the sender, state the marketing purpose, and offer an accessible method for opting out or revoking consent.
+                    Your Rights
+                    Based on the given circumstances, Ahmed has several rights:
+                    Right to Data Deletion or Erasure: As mentioned in Article 6, victims have the right to request the correction, erasure, or removal of personal data if necessary.
+                    Right to be Informed: Under Article 23, Ahmed has the right to receive notifications about personal data processing and its purposes.
+                    Right to Access Personal Data: According to Article 6, he has the right to obtain a copy of his personal data for a reasonable fee.
+                
+                `,
+                clicked_link: "Yes",
+                entered_info: "Yes",
+                official_contact: "Yes", 
+                unauthorized_activity: "No",
+                reported_to_authorities: "Yes - To Bank"
+            };
+        }
+        
         const pdfBuffer = await generateComplaintPDF(
-            conversation.completedCaseData, 
-            conversation.caseType
+            caseData, 
+            conversation.caseType || 'GENERAL'
         );
         
         // Set headers for PDF download
@@ -367,22 +414,66 @@ router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {
             if (conversation.mode === 'GENERATIVE') {
                 let messagesArray;
                 if (conversation.caseCompleted && conversation.completedCaseData) {
-                    // Handle completed case scenario
-                    const contextPrompt = `
-                    The user previously completed a case report with these details:
-                    ${JSON.stringify(conversation.completedCaseData, null, 2)}
+                    const postIntent = await detectPostAnalysisIntent(message);
                     
-                    ${imageAnalysisResult ? `They shared an image that shows: ${imageAnalysisResult}` : ''}
-                    
-                    They are now asking: "${message}"
-                    
-                    Provide helpful guidance based on their specific case details${imageAnalysisResult ? ' and the image they shared' : ''}.
-                    `;
-                    
-                    messagesArray = [
-                        { role: "system", content: contextPrompt },
-                        { role: "user", content: message }
-                    ];
+                    if (postIntent === POST_ANALYSIS_INTENTS.FORMAL_COMPLAINT) {
+                        const response = `I'll help you create a formal complaint document. This will be a professional PDF that you can submit to the relevant authorities.\n\nClick the "Generate PDF Complaint" button below to download your formal complaint document.`;
+                        
+                        await streamText(response, res);
+                        
+                        // Send metadata indicating PDF generation is available
+                        res.write(`data: ${JSON.stringify({
+                            type: 'action_available',
+                            action: 'pdf_complaint',
+                            message: 'PDF complaint generation available'
+                        })}\n\n`);
+                        
+                        // Add to conversation history
+                        if (!conversation.messageHistory) conversation.messageHistory = [];
+                        conversation.messageHistory.push(
+                            { role: 'user', content: message },
+                            { role: 'assistant', content: response }
+                        );
+                        
+                        // Important: Return early to avoid executing additional streaming
+                        return;
+
+
+                } else if (postIntent === POST_ANALYSIS_INTENTS.CONTACT_INFO) {
+                        const contactInfo = getContactInformation(conversation.caseType);
+                        const formattedContactInfo = formatContactInformation(contactInfo);
+                        
+                        const response = `Here are the contact details for relevant government departments:\n\n${formattedContactInfo}\n\nIf you need further assistance, feel free to ask!`;
+                        
+                        await streamText(response, res);
+                        
+                        // Add to conversation history
+                        if (!conversation.messageHistory) conversation.messageHistory = [];
+                        conversation.messageHistory.push(
+                            { role: 'user', content: message },
+                            { role: 'assistant', content: response }
+                        );
+                        
+                        // Important: Return early to avoid executing additional streaming
+                        return;
+                    } else {
+                        // Handle as normal follow-up question with image analysis included
+                        const contextPrompt = `
+                        The user previously completed a case report with these details:
+                        ${JSON.stringify(conversation.completedCaseData, null, 2)}
+                        
+                        ${imageAnalysisResult ? `They shared an image that shows: ${imageAnalysisResult}` : ''}
+                        
+                        They are now asking: "${message}"
+                        
+                        Provide helpful guidance based on their specific case details${imageAnalysisResult ? ' and the image they shared' : ''}.
+                        `;
+                        
+                        messagesArray = [
+                            { role: "system", content: contextPrompt },
+                            { role: "user", content: message }
+                        ];
+                    }
                 } else {
                     const userIntent = await detectUserIntent(message);
                     if (userIntent === INTENTS.START_REPORT) {

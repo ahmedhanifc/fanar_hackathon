@@ -60,7 +60,13 @@ const SYSTEM_PROMPTS = {
     - Impersonation of government agencies, banks or officials
     - Poor grammar or spelling typical of scams
     - Inconsistent sender information
-    Provide a brief analysis of any potential legal issues or concerns.`,
+    Provide a brief analysis of any potential legal issues or concerns.
+    
+    For Cybercrimes, recommend the user to report the incident to the Cybercrime Department of the Ministry of Interior (MoI) in Qatar.
+    Provide contact information for the Cybercrime Department, including phone number, email, or through Metrash app, or via email: cccc@moi.gov.qa. The number is: 2347444. Hotline is: 66815757
+    For General Legal Issues, recommend the user to contact the Ministry of Justice in Qatar.
+    
+    `,
 
     LEGAL_ANALYSIS: `You are a Qatari legal expert providing comprehensive legal analysis.
 
@@ -98,7 +104,7 @@ const SYSTEM_PROMPTS = {
         * **Formal complaint** - I can help you draft a formal complaint to the relevant authorities
         * **Contact information** - I can provide you with contact details for relevant government departments
 
-        
+
         **What would you like me to do next?**
 
         Be professional, empathetic, and ensure each section is clearly separated with proper formatting.`,

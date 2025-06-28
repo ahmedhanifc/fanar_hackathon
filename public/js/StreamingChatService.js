@@ -91,6 +91,9 @@ class StreamingChatService {
                                 this.isLegalAnalysis = false;
                                 this.progressElement = null;
                                 return;
+                            }    
+                            else if (parsed.type === 'action_available') {
+                                handleSpecialActions(parsed);
                             } else if (parsed.type === 'metadata') {
                                 onComplete(parsed);
                             } else if (parsed.type === 'error') {

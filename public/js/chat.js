@@ -574,3 +574,85 @@ async function generateReport() {
         alert('Failed to generate report');
     }
 }
+
+function handleSpecialActions(data) {
+    if (data.type === 'action_available' && data.action === 'pdf_complaint') {
+        // Create PDF button if it doesn't exist yet
+        if (!document.getElementById('pdf-complaint-button')) {
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'action-buttons-container';
+            
+            const pdfButton = document.createElement('button');
+            pdfButton.id = 'pdf-complaint-button';
+            pdfButton.className = 'pdf-button';
+            pdfButton.innerHTML = '<i class="fas fa-file-pdf"></i> Generate PDF Complaint';
+            
+            pdfButton.addEventListener('click', generatePDFComplaint);
+            
+            buttonContainer.appendChild(pdfButton);
+            
+            // Add to the last bot message
+            const messages = document.querySelectorAll('.message.bot');
+            const lastBotMessage = messages[messages.length - 1];
+            
+            if (lastBotMessage) {
+                lastBotMessage.appendChild(buttonContainer);
+            }
+        }
+    }
+}
+
+async function generatePDFComplaint() {
+    try {
+        const pdfButton = document.getElementById('pdf-complaint-button');
+        if (pdfButton) {
+            pdfButton.disabled = true;
+            pdfButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+        }
+        
+        const response = await fetch('/api/chat/generate-complaint-pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                conversationId: getCurrentConversationId()
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to generate PDF');
+        }
+        
+        // Get the PDF as a blob
+        const blob = await response.blob();
+        
+        // Create a download link
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'formal_complaint.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        if (pdfButton) {
+            pdfButton.disabled = false;
+            pdfButton.innerHTML = '<i class="fas fa-file-pdf"></i> Download PDF Complaint';
+        }
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Failed to generate PDF. Please try again.');
+        
+        const pdfButton = document.getElementById('pdf-complaint-button');
+        if (pdfButton) {
+            pdfButton.disabled = false;
+            pdfButton.innerHTML = '<i class="fas fa-file-pdf"></i> Generate PDF Complaint';
+        }
+    }
+}
+
+function getCurrentConversationId() {
+    return localStorage.getItem('conversationId') || 'default-session';
+}

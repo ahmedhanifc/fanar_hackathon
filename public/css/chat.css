@@ -432,3 +432,48 @@ h1,
     color: #6c757d;
     font-style: italic;
 }
+
+.image-analysis-progress .analysis-progress {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #4a90e2;
+    margin: 10px 0;
+}
+
+.image-analysis-progress .progress-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.image-analysis-progress .progress-header i {
+    color: #4a90e2;
+    font-size: 1.2em;
+}
+
+.image-analysis-progress .progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.image-analysis-progress .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4a90e2, #357abd);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    width: 0%;
+}
+
+.image-analysis-progress .progress-message {
+    font-size: 0.9em;
+    color: #6c757d;
+    font-style: italic;
+}

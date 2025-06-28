@@ -1,7 +1,9 @@
 class StreamingChatService {
     constructor() {
         this.isLegalAnalysis = false;
+        this.isImageAnalysis = false;
         this.progressElement = null;
+        this.imageProgressElement = null;
     }
 
     async sendStreamingMessage(message, onToken, onComplete, onError, imageData = null) {
@@ -66,7 +68,23 @@ class StreamingChatService {
                                     this.isLegalAnalysis = true;
                                 }
                                 updateLegalAnalysisProgress(parsed.progress, parsed.message);
-                            } else if (parsed.type === 'complete_analysis') {
+                            } else if (parsed.type === 'image_progress') {
+                                // Handle image analysis progress
+                                if (!this.isImageAnalysis) {
+                                    this.imageProgressElement = addImageAnalysisProgress();
+                                    this.isImageAnalysis = true;
+                                }
+                                updateImageAnalysisProgress(parsed.progress, parsed.message);
+                            } else if (parsed.type === 'complete_image_analysis') {
+                                // Handle complete image analysis - display instantly
+                                showImageAnalysisResult(parsed.content);
+                                // Reset the image analysis state
+                                this.isImageAnalysis = false;
+                                this.imageProgressElement = null;
+                                return;
+                            }
+                            
+                            else if (parsed.type === 'complete_analysis') {
                                 // Handle complete legal analysis
                                 showLegalAnalysisResult(parsed.content);
                                 onComplete && onComplete();
@@ -88,6 +106,47 @@ class StreamingChatService {
         } catch (error) {
             onError(error.message);
         }
+    }
+}
+
+function addImageAnalysisProgress() {
+    const chatMessages = document.getElementById('chat-messages');
+    const progressDiv = document.createElement('div');
+    progressDiv.className = 'message bot image-analysis-progress';
+    progressDiv.id = 'image-analysis-progress';
+    
+    progressDiv.innerHTML = `
+        <div class="message-content">
+            <div class="analysis-progress">
+                <div class="progress-header">
+                    <i class="fas fa-image"></i>
+                    <span>Analyzing Image</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="image-analysis-progress-bar"></div>
+                </div>
+                <div class="progress-message" id="image-analysis-progress-message">
+                    Initializing analysis...
+                </div>
+            </div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(progressDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return progressDiv;
+}
+
+function updateImageAnalysisProgress(progress, message) {
+    const progressBar = document.getElementById('image-analysis-progress-bar');
+    const progressMessage = document.getElementById('image-analysis-progress-message');
+    
+    if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+    }
+    
+    if (progressMessage) {
+        progressMessage.textContent = message;
     }
 }
 
@@ -141,6 +200,23 @@ function showLegalAnalysisResult(content) {
     
     // Add the formatted legal analysis
     addMessageToChat(content, 'bot');
+}
+
+function showImageAnalysisResult(content) {
+    // Remove the progress bar
+    const progressDiv = document.getElementById('image-analysis-progress');
+    if (progressDiv) {
+        progressDiv.remove();
+    }
+    
+    // Add the formatted image analysis instantly
+    addMessageToChat(content, 'bot');
+    
+    // Scroll to bottom
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
 }
 
 window.StreamingChatService = StreamingChatService;

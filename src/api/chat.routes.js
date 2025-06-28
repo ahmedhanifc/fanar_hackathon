@@ -242,27 +242,44 @@ router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {
                 // Extract base64 data from data URL if present
                 const base64Data = imageData.split(',')[1] || imageData;
                 
-                // Send initial acknowledgment about the image
-                res.write(`data: ${JSON.stringify({ type: 'token', content: "I've received your image. " })}\n\n`);
-                res.write(`data: ${JSON.stringify({ type: 'token', content: "Let me analyze it. " })}\n\n`);
+                // Send image analysis progress updates
+                res.write(`data: ${JSON.stringify({ 
+                    type: 'image_progress', 
+                    progress: 0, 
+                    message: 'Initializing image analysis...' 
+                })}\n\n`);
+                
+                res.write(`data: ${JSON.stringify({ 
+                    type: 'image_progress', 
+                    progress: 25, 
+                    message: 'Processing image data...' 
+                })}\n\n`);
+                
+                res.write(`data: ${JSON.stringify({ 
+                    type: 'image_progress', 
+                    progress: 50, 
+                    message: 'Analyzing image content...' 
+                })}\n\n`);
                 
                 // Process the image with FANAR API
                 imageAnalysisResult = await processFanarImage(base64Data);
                 
-                // Send image analysis as the first part of the response
                 res.write(`data: ${JSON.stringify({ 
-                    type: 'token', 
-                    content: "Based on the image you've shared, I can see: " 
+                    type: 'image_progress', 
+                    progress: 100, 
+                    message: 'Analysis complete!' 
                 })}\n\n`);
                 
-                // Stream the analysis results word by word
-                const words = imageAnalysisResult.split(' ');
-                for (let i = 0; i < words.length; i++) {
-                    const word = words[i] + (i < words.length - 1 ? ' ' : '');
-                    res.write(`data: ${JSON.stringify({ type: 'token', content: word })}\n\n`);
-                    // Small delay for streaming effect
-                    await new Promise(resolve => setTimeout(resolve, 30));
-                }
+                // Small delay to show completion
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Send the complete image analysis result instantly (not streamed)
+                const fullImageAnalysis = `Based on the image you've shared, I can see: ${imageAnalysisResult}`;
+                res.write(`data: ${JSON.stringify({ 
+                    type: 'complete_image_analysis', 
+                    content: fullImageAnalysis
+                })}\n\n`);
+                
             } catch (imageError) {
                 console.error('Error processing image:', imageError);
                 res.write(`data: ${JSON.stringify({ 
@@ -273,7 +290,7 @@ router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {
         }
 
         // Now handle the text message if present
-        if (message) {
+        if (message && message.trim()) {
             // If we've already processed an image, add a transition to the message analysis
             if (imageData) {
                 res.write(`data: ${JSON.stringify({ 
@@ -412,7 +429,7 @@ router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {
                     conversationManager.updateConversation(conversationId, { mode: 'GENERATIVE' });
                 }
             }
-        } else if (imageAnalysisResult) {
+        } else if (imageAnalysisResult && !message) { // Only show this if there's no message
             // If only an image was sent (no text), add a prompt for follow-up
             res.write(`data: ${JSON.stringify({ 
                 type: 'token', 
@@ -431,11 +448,13 @@ router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {
 
         res.write('data: [DONE]\n\n');
         res.end();
+        return;
         
     } catch (error) {
         console.error('Streaming chat error:', error);
         res.write(`data: ${JSON.stringify({ type: 'error', message: 'Failed to process message' })}\n\n`);
         res.end();
+        return;
     }
 });
 

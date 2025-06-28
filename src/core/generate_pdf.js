@@ -135,104 +135,61 @@ function generatePhishingComplaint(caseData) {
     const currentDate = new Date().toLocaleDateString('en-GB');
     
     return `
-# FORMAL COMPLAINT - PHISHING INCIDENT
+# شكوى رسمية - حادثة تصيّد احتيالي
 
-## Personal Information
+## معلومات شخصية
 
-**Full Name:** ${responses.full_name || 'Not specified'}
-**Nationality:** ${responses.nationality || 'Not specified'}
-**Qatar ID:** ${responses.qatar_id || 'Not specified'}
-**Email:** ${responses.email || 'Not specified'}
-**Phone Number:** ${responses.phone_number || 'Not specified'}
+**الاسم الكامل:** ${responses.full_name || 'غير محدد'}
+**الجنسية:** ${responses.nationality || 'غير محدد'}
+**الهوية القطرية:** ${responses.qatar_id || 'غير محدد'}
+**البريد الإلكتروني:** ${responses.email || 'غير محدد'}
+**رقم الهاتف:** ${responses.phone_number || 'غير محدد'}
 
-## Incident Details
+## تفاصيل الحادثة
 
-**Date of Incident:** ${responses.incident_date || 'Not specified'}
-**Type of Account Targeted:** ${responses.targeted_account || 'Not specified'}
-**Suspected Entity/Website:** ${responses.suspect_entity || 'Not specified'}
+**تاريخ الحادثة:** ${responses.incident_date || 'غير محدد'}
+**نوع الحساب المستهدف:** ${responses.targeted_account || 'غير محدد'}
+**الكيان/الموقع الإلكتروني المشتبه به:** ${responses.suspect_entity || 'غير محدد'}
 
-## Incident Description
+## وصف الحادثة
 
-${responses.incident_description || 'Not provided'}
+${responses.incident_description || 'غير مُقدم'}
 
-## Actions Taken
+## الإجراءات المتخذة
 
-- Clicked suspicious link: ${responses.clicked_link === 'Yes' ? '☑ Yes' : '☐ No'}
-- Entered personal information: ${responses.entered_info === 'Yes' ? '☑ Yes' : '☐ No'}
-- Received official contact: ${responses.official_contact === 'Yes' ? '☑ Yes' : '☐ No'}
-- Noticed unauthorized activity: ${responses.unauthorized_activity === 'Yes' ? '☑ Yes' : '☐ No'}
-- Reported to authorities: ${responses.reported_to_authorities === 'Yes' ? '☑ Yes' : '☐ No'}
+- تم النقر على رابط مريب: ${responses.clicked_link === 'نعم' ? '☑ نعم' : '☐ لا'}
+- تم إدخال المعلومات الشخصية: ${responses.entered_info === 'نعم' ? '☑ نعم' : '☐ لا'}
+- تم استلام جهة اتصال رسمية: ${responses.official_contact === 'نعم' ? '☑ نعم' : '☐ لا'}
+- تم ملاحظة نشاط غير مصرح به: ${responses.unauthorized_activity === 'نعم' ? '☑ نعم': '☐ لا'}
 
-## Requested Actions
+- تم الإبلاغ عنه للسلطات: ${responses.reported_to_authorities === 'نعم' ? '☑ نعم' : '☐ لا'}
 
-I hereby formally request the following actions:
+## الإجراءات المطلوبة
 
-1. Investigation into the phishing attempt and identification of perpetrators
-2. Prevention of further fraudulent activities using similar methods
-3. Recovery of any financial losses incurred (if applicable)
-4. Legal action against the responsible parties
+أطلب رسميًا اتخاذ الإجراءات التالية:
 
-## Declaration
+1. التحقيق في محاولة التصيد الاحتيالي وتحديد هوية الجناة
+2. منع أي أنشطة احتيالية أخرى باستخدام أساليب مماثلة
+3. تعويض أي خسائر مالية متكبدة (إن وجدت)
+4. اتخاذ إجراءات قانونية ضد الأطراف المسؤولة
 
-I declare that the information provided in this complaint is true and accurate to the best of my knowledge.
+## إقرار
 
----
-
-**Complainant Signature:** _________________________
-
-**Date:** ${currentDate}
+أُقر بأن المعلومات الواردة في هذه الشكوى صحيحة ودقيقة على حد علمي.
 
 ---
 
-*This complaint was generated using Fanar Legal Assistant*
+**توقيع المُشتكي:** _________________________
+
+**التاريخ:** ${currentDate}
+
+---
+
+*تم إنشاء هذه الشكوى باستخدام مساعد الفنار القانوني*
 `;
 }
 
-function generateGeneralComplaint(caseData) {
-    const responses = caseData.responses || {};
-    const currentDate = new Date().toLocaleDateString('en-GB');
-    
-    return `
-# FORMAL COMPLAINT
 
-## Complainant Information
-
-**Case Description:** ${responses.case_description || 'Not specified'}
-**Date of Incident:** ${responses.incident_date || 'Not specified'}
-**Parties Involved:** ${responses.parties_involved || 'Not specified'}
-
-## Financial Impact
-
-**Financial Impact:** ${responses.financial_impact || 'Not specified'}
-${responses.loss_amount ? `**Amount Lost:** ${responses.loss_amount} QAR` : ''}
-
-## Evidence Available
-
-**Evidence:** ${responses.evidence_available || 'Not specified'}
-
-## Previous Actions
-
-**Previous Actions Taken:** ${responses.previous_action || 'None'}
-
-## Requested Relief
-
-I hereby formally request appropriate legal action and remedy for the above-mentioned incident.
-
-## Declaration
-
-I declare that the information provided in this complaint is true and accurate to the best of my knowledge.
-
----
-
-**Complainant Signature:** _________________________
-
-**Date:** ${currentDate}
-
----
-
-*This complaint was generated using Fanar Legal Assistant*
-`;
-}
 
 module.exports = {
     generateComplaintPDF

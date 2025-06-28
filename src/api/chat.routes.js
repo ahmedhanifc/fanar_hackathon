@@ -15,6 +15,12 @@ const path = require('path');
 // Store active conversations (in production, use a database)
 const activeConversations = new Map();
 const conversationManager = new ConversationManager();
+const { generatePhishingReport, generateGeneralReport } = require('../core/report_generator');
+
+const { POST_ANALYSIS_INTENTS, detectPostAnalysisIntent } = require("../core/intent_detection");
+const { generateComplaintPDF } = require("../core/generate_pdf");
+const { getContactInformation, formatContactInformation } = require("../core/contact_information");
+
 
 
 const LEGAL_REPORT_PROMPTS = [
@@ -212,6 +218,64 @@ async function streamText(text, res) {
         await new Promise(resolve => setTimeout(resolve, 50));
     }
 }
+
+router.post('/generate-complaint-pdf', async (req, res) => {
+    try {
+        const { conversationId = 'default-session' } = req.body;
+        
+        const conversation = conversationManager.getConversation(conversationId);
+        
+        if (!conversation.caseCompleted || !conversation.completedCaseData) {
+            return res.status(400).json({ error: 'No completed case found' });
+        }
+        
+        const pdfBuffer = await generateComplaintPDF(
+            conversation.completedCaseData, 
+            conversation.caseType
+        );
+        
+        // Set headers for PDF download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="formal_complaint.pdf"');
+        res.setHeader('Content-Length', pdfBuffer.length);
+        
+        res.send(pdfBuffer);
+        
+    } catch (error) {
+        console.error('PDF generation error:', error);
+        res.status(500).json({ error: 'Failed to generate PDF' });
+    }
+});
+
+router.post('/generate-report', async (req, res) => {
+    try {
+        const { conversationId = 'default-session' } = req.body;
+        
+        const conversation = conversationManager.getConversation(conversationId);
+        
+        if (!conversation.caseCompleted || !conversation.completedCaseData) {
+            return res.status(400).json({ error: 'No completed case found' });
+        }
+        
+        let reportMarkdown;
+        
+        if (conversation.caseType === CASE_TYPES.PHISHING_SMS) {
+            reportMarkdown = generatePhishingReport(conversation.completedCaseData);
+        } else {
+            reportMarkdown = generateGeneralReport(conversation.completedCaseData);
+        }
+        
+        res.json({
+            reportMarkdown,
+            caseType: conversation.caseType,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('Report generation error:', error);
+        res.status(500).json({ error: 'Failed to generate report' });
+    }
+});
 
 
 router.post('/stream', express.json({limit: '20mb'}), async (req, res) => {

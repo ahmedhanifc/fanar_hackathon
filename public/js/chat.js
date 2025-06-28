@@ -526,3 +526,51 @@ function addImageToChat(imageUrl, sender) {
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
+
+// Add this function to generate and display the report
+async function generateReport() {
+    try {
+        const response = await fetch('/api/chat/generate-report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                conversationId: 'default-session'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.reportMarkdown) {
+            // Convert markdown to HTML and display in a new window for printing
+            const reportWindow = window.open('', '_blank');
+            const htmlContent = marked(data.reportMarkdown); // You'll need to include marked.js
+            
+            reportWindow.document.write(`
+                <!DOCTYPE html>
+                <html dir="rtl" lang="ar">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Legal Report</title>
+                    <style>
+                        body { font-family: 'Arial', sans-serif; margin: 40px; line-height: 1.6; }
+                        h1, h2, h3 { color: #8B0000; }
+                        .checkbox { margin: 10px 0; }
+                        hr { margin: 30px 0; border: 1px solid #ccc; }
+                    </style>
+                </head>
+                <body>
+                    ${htmlContent}
+                    <button onclick="window.print()" style="margin-top: 20px; padding: 10px 20px;">طباعة التقرير</button>
+                </body>
+                </html>
+            `);
+            
+            reportWindow.document.close();
+        }
+    } catch (error) {
+        console.error('Error generating report:', error);
+        alert('Failed to generate report');
+    }
+}

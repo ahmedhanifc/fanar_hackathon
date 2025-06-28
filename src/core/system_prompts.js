@@ -95,12 +95,10 @@ const SYSTEM_PROMPTS = {
         ### What I Can Help You With
         I can assist you with the following options:
 
-        * **Draft a formal complaint** - I can help you write a complaint to local authorities
-        * **Contact information** - I can provide details for relevant government departments
-        * **Legal documentation** - I can help prepare necessary documents for your case
-        * **Evidence collection** - I can guide you through gathering evidence
-        * **Similar cases** - I can show you how similar cases were resolved
+        * **Formal complaint** - I can help you draft a formal complaint to the relevant authorities
+        * **Contact information** - I can provide you with contact details for relevant government departments
 
+        
         **What would you like me to do next?**
 
         Be professional, empathetic, and ensure each section is clearly separated with proper formatting.`,

@@ -2,6 +2,8 @@
  * Case structure definitions for the application
  */
 
+const { options } = require("../api/chat.routes");
+
 // Define case types
 const CASE_TYPES = {
     PHISHING_SMS: 'PHISHING_SMS',
@@ -16,48 +18,71 @@ const CASE_STRUCTURES = {
         description: "Handle cases related to phishing SMS attacks",
         questions: [
             {
-                id: "incident_date",
-                question: "When did you receive the phishing SMS?",
-                type: "date",
-                required: true
-            },
-            {
-                id: "sms_content",
-                question: "What was the content of the SMS? If possible, please copy and paste it.",
+                id: "full_name",
+                question: "Can you tell me your full name?",
                 type: "text",
                 required: true
             },
             {
-                id: "action_taken",
-                question: "Did you click on any links in the SMS or provide any information?",
-                type: "select",
-                options: ["Yes, I clicked on a link", "Yes, I provided information", "Yes, both", "No, I did not interact with it"],
+                id: "nationality",
+                question: "What is your nationality?",
+                type: "text",
                 required: true
             },
             {
-                id: "financial_loss",
-                question: "Did you suffer any financial loss as a result?",
-                type: "select",
-                options: ["Yes", "No"],
+                id: "qatar_id",
+                question: "What is your Qatar ID number?",
+                type: "number",
+                required: true
+            },
+            {
+                id: "targeted_account",
+                question: "What account was targeted in this phishing SMS? (e.g., bank account, social media account)",
+                type: "text",
                 required: true
             },
             {
                 id: "loss_amount",
-                question: "How much money did you lose? (in QAR)",
-                type: "number",
-                required: false,
-                conditionalOn: {
-                    questionId: "financial_loss",
-                    value: "Yes"
-                }
+                question: "Did you click on a suspicious link that was sent to you?",
+                type: "select",
+                options: ["Yes", "No"],
+                required: true,
             },
             {
-                id: "reported",
-                question: "Have you reported this incident to the police or your bank?",
+                id: "personal_info",
+                question: "Did you enter any personal or banking information after clicking the link?",
                 type: "select",
-                options: ["Yes, to the police", "Yes, to my bank", "Yes, to both", "No, I haven't reported it yet"],
-                required: true
-            }
+                options: ["Yes", "No"],
+                required: true,
+            },
+            {
+                id: "suspicious_message",
+                question: "Did you receive a call or message claiming to be from an official entity (bank, ministry, company) before or after the suspicious message?",
+                type: "select",
+                options: ["Yes", "No"],
+                required: true,
+            },
+            {
+                id: "reported_to_authorities",
+                question: "Did you report this incident to the police or your bank?",
+                type: "select",
+                options: ["Yes", "No"],
+                required: true,
+            },
+            {
+                id: "phishing_attempt",
+                question: "Have you ever been targeted by a phishing attempt before?",
+                type: "select",
+                options: ["Yes", "No"],
+                required: true,
+            },
+            {
+                id: "phishing_attempt",
+                question: "Do you have any documents or screenshots to support your complaint? (e.g., screenshot of the message, link, account details, previous report, proof of withdrawal)",
+                type: "select",
+                options: ["Yes", "No"],
+                required: true,
+            },
         ]
     },
 

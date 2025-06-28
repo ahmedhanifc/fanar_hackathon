@@ -3,8 +3,17 @@ const { getFanarChatCompletion } = require('./fanar_service');
 // Define possible intents
 const INTENTS = {
     CONTINUE_CHAT: 'CONTINUE_CHAT',
-    START_REPORT: 'START_REPORT'
+    START_REPORT: 'START_REPORT',
+    
 };
+
+const POST_ANALYSIS_INTENTS = {
+    FORMAL_COMPLAINT: 'formal_complaint',
+    CONTACT_INFO: 'contact_info',
+    UNKNOWN: 'unknown'
+};
+
+
 
 /**
  * Detect if user wants to start the report process or continue chatting
@@ -83,7 +92,37 @@ async function detectUserIntent(userMessage) {
     }
 }
 
+async function detectPostAnalysisIntent(userMessage) {
+    const formalComplaintKeywords = [
+        'formal complaint', 'complaint', 'draft complaint', 'file complaint',
+        'report this', 'official complaint', 'legal complaint', 'submit complaint',
+        'help me draft', 'create complaint', 'make complaint'
+    ];
+    
+    const contactInfoKeywords = [
+        'contact', 'contact information', 'phone number', 'department',
+        'who to call', 'where to report', 'government contact', 'authority contact',
+        'contact details', 'phone numbers', 'how to contact'
+    ];
+    
+    const message = userMessage.toLowerCase();
+    
+    // Check for formal complaint intent
+    if (formalComplaintKeywords.some(keyword => message.includes(keyword))) {
+        return POST_ANALYSIS_INTENTS.FORMAL_COMPLAINT;
+    }
+    
+    // Check for contact info intent
+    if (contactInfoKeywords.some(keyword => message.includes(keyword))) {
+        return POST_ANALYSIS_INTENTS.CONTACT_INFO;
+    }
+    
+    return POST_ANALYSIS_INTENTS.UNKNOWN;
+}
+
 module.exports = {
     detectUserIntent,
-    INTENTS
+    INTENT,
+    detectPostAnalysisIntent,
+    POST_ANALYSIS_INTENTS,
 };

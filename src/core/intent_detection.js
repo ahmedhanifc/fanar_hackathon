@@ -40,7 +40,9 @@ async function detectUserIntent(userMessage) {
         - "Okay"
         - "Sure"
         - "Let's start"
-        - "Begin"
+        - "Begin",
+        - "Proceed with the report",
+        - "I want to file a report",
 
         Examples of CONTINUE_CHAT:
         - "Tell me more about that"

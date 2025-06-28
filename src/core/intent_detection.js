@@ -96,7 +96,7 @@ async function detectPostAnalysisIntent(userMessage) {
     const formalComplaintKeywords = [
         'formal complaint', 'complaint', 'draft complaint', 'file complaint',
         'report this', 'official complaint', 'legal complaint', 'submit complaint',
-        'help me draft', 'create complaint', 'make complaint'
+        'help me draft', 'create complaint', 'make complaint', "formal report","report"
     ];
     
     const contactInfoKeywords = [

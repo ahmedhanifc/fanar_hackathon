@@ -1,0 +1,15 @@
+[build]
+  functions = "netlify/functions"
+  publish   = "public"
+  command   = "npm install"
+
+[functions]
+  # bundle views/static into the function so SSR works
+  node_bundler = "esbuild"
+  included_files = ["templates/**", "public/**", "legal_references/**"]
+
+# send all routes to the Express function (it will render pages & serve static via express.static)
+[[redirects]]
+  from = "/*"
+  to   = "/.netlify/functions/server"
+  status = 200

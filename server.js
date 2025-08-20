@@ -7,16 +7,17 @@ const app = express();
 
 // Static file serving
 app.use(express.static('public'));
-
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 
 // Middleware
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // Handlebars setup
-app.engine('handlebars', exphbs.engine({ defaultLayout: 'main', layoutsDir: path.join(__dirname, 'templates/layouts') }));
+app.engine(
+  'handlebars',
+  exphbs.engine({ defaultLayout: 'main', layoutsDir: path.join(__dirname, 'templates/layouts') })
+);
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'templates'));
 
@@ -26,20 +27,25 @@ app.use('/api/cases', require('./src/api/cases.routes.js'));
 app.use('/api/lawyer', require('./src/api/lawyer.routes.js'));
 app.use('/', require('./src/api/home.routes.js'));
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Something went wrong!' });
-});
-
-// 404 handler
+// 404 handler (keep last, before error handler)
 app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ error: 'Route not found' });
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+// Error handler (must be last)
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
+
+/**
+ * Start the server only when running locally.
+ * In Netlify Functions, this file will be required by
+ * netlify/functions/server.js and export the app instead.
+ */
+if (!process.env.NETLIFY) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`-----------------------------------------`);
     console.log(`Web interface: http://localhost:${PORT}`);
@@ -49,4 +55,7 @@ app.listen(PORT, () => {
     console.log(`  - /api/chat/* (Chat functionality)`);
     console.log(`  - /api/cases/* (Case management)`);
     console.log(`  - /api/lawyer/* (Lawyer dashboard)`);
-});
+  });
+}
+
+module.exports = app;

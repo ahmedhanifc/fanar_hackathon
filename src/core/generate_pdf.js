@@ -46,48 +46,81 @@ async function generateComplaintPDF(caseData, caseType) {
             <meta charset="utf-8">
             <title>Formal Complaint</title>
             <style>
+                @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
+                
                 body {
-                    font-family: Arial, sans-serif;
-                    line-height: 1.6;
+                    font-family: 'Noto Sans Arabic', Arial, sans-serif;
+                    line-height: 1.8;
                     color: #333;
                     max-width: 800px;
                     margin: 0 auto;
                     padding: 20px;
+                    direction: rtl;
                 }
+                
                 h1, h2, h3 {
-                    color: #2c5282;
+                    color: #6c0000;
                     border-bottom: 2px solid #e2e8f0;
                     padding-bottom: 10px;
+                    text-align: right;
+                    font-weight: 700;
                 }
+                
                 .header {
                     text-align: center;
                     margin-bottom: 30px;
-                    border-bottom: 3px solid #2c5282;
+                    border-bottom: 3px solid #6c0000;
                     padding-bottom: 20px;
                 }
+                
                 .section {
                     margin-bottom: 25px;
+                    text-align: right;
                 }
+                
                 .signature-section {
                     margin-top: 50px;
                     border-top: 1px solid #ccc;
                     padding-top: 20px;
+                    text-align: right;
                 }
+                
                 table {
                     width: 100%;
                     border-collapse: collapse;
                     margin: 15px 0;
                 }
+                
                 td, th {
                     border: 1px solid #ddd;
-                    padding: 8px;
-                    text-align: left;
+                    padding: 10px;
+                    text-align: right;
                 }
+                
                 th {
-                    background-color: #f2f2f2;
+                    background-color: #f5f5f5;
                 }
+                
                 .checkbox {
-                    margin-right: 10px;
+                    margin-left: 10px;
+                }
+                
+                strong {
+                    color: #6c0000;
+                    font-weight: 600;
+                }
+                
+                p {
+                    margin-bottom: 12px;
+                }
+                
+                ul, ol {
+                    padding-right: 25px;
+                    padding-left: 0;
+                }
+                
+                li {
+                    margin-bottom: 8px;
                 }
             </style>
         </head>
